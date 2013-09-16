@@ -1,0 +1,15 @@
+{
+  "name": "qns",
+  "description": "Qiyi Node Server",
+  "version": "0.0.11",
+  "dependencies": {
+    "commander": "2.0.0",
+    "async": "0.2.9",
+    "express": "3.3.7",
+    "qiyilib": "*"
+  },
+  "main":"./index.js",
+  "bin": {
+    "qns": "bin/qns.js"
+  }
+}
