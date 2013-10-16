@@ -8,8 +8,11 @@
     "express": "3.3.7",
     "qiyilib": "*"
   },
-  "main":"./index.js",
+  "main": "./index.js",
   "bin": {
     "qns": "bin/qns.js"
+  },
+  "devDependencies": {
+    "should": "~2.0.1"
   }
 }
