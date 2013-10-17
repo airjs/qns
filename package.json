@@ -6,10 +6,15 @@
     "commander": "2.0.0",
     "async": "0.2.9",
     "express": "3.3.7",
+    "hiredis": "0.1.15",
+    "redis": "0.8.6",
     "qiyilib": "*"
   },
-  "main":"./index.js",
+  "main": "./index.js",
   "bin": {
     "qns": "bin/qns.js"
+  },
+  "devDependencies": {
+    "should": "~2.0.1"
   }
 }
