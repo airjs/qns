@@ -6,7 +6,10 @@
     "commander": "2.0.0",
     "async": "0.2.9",
     "express": "3.3.7",
-    "qiyilib": "*"
+    "forever":"0.10.11",
+    "qiyilib": "*",
+    "consolidate":"0.10.0",
+    "loglevel":"*"
   },
   "main":"./index.js",
   "bin": {

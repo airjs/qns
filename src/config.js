@@ -2,19 +2,21 @@ var lib = require('qiyilib');
 var Path = require('path');
 var fs = require('fs');
 
-var defaultConfig = Path.join(__dirname,'conf/default.conf');
+var defaultConfig = Path.join(__dirname,'../conf/default.conf');
 var currConfig = defaultConfig;
 
 var evt = {};
 
 var Config = {
     load:function(filePath){
+        this.apply(filePath);
+        return this._load();
+    },
+    watch:function(){
         if(currConfig){
             fs.unwatchFile(currConfig);
         }
-        this.apply(filePath);
         fs.watchFile(currConfig,this._onchange.bind(this));
-        return this._load();
     },
     reload:function(){
         return this._load();
@@ -60,17 +62,20 @@ var Config = {
     },
     _load:function(){
         var fileContent,config;
+        var defaultConfig = {
+            socketPort:56789
+        };
         try{
             fileContent = lib.fs.readFile(currConfig);
         }
         catch(e){
-            return null;
+            return defaultConfig;
         }
         try{
-            config = JSON.parse(fileContent);
+            config = lib.object.extend(defaultConfig,JSON.parse(fileContent));
         }
         catch(e){
-            return null;
+            return defaultConfig;
         }
         return config;
     }
