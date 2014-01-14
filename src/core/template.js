@@ -9,7 +9,6 @@ module.exports = {
         var ext = config.ext || 'jade';
         var views = config.views || __dirname + '/views';
         app.engine(ext,cons[type]);
-        console.log(cons[type]);
         app.set('view engine', 'html');
         app.set('views', views);
     }

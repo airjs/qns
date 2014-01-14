@@ -11,7 +11,8 @@ var Server = require('../../src/server');
 var assert = require('assert');
 
 var modulePath = Path.join(process.env.QNS_PATH,'test');
-
+var log = require('loglevel');
+log.disableAll();
 var server = new Server({port:9999,views:modulePath});
 server.start();
 

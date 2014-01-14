@@ -2,12 +2,10 @@ var lib = require('qiyilib');
 var Path = require('path');
 var fs = require('fs');
 var Config = require('./config');
-var ic = new lib.ic.InfoCenter({moduleName:'server'});
 var Server = require('./core/webserver');
 var Template = require('./core/template');
 var log = require('loglevel');
-lib.ic.InfoCenter.enable();
-
+log.enableAll();
 var modulePath = process.env.QNS_PATH || Path.join(__dirname,'qns_modules');
 
 var Container = function(options){
@@ -17,7 +15,7 @@ var Container = function(options){
         Config.watch();
         Config.on('change',function(e){
             var config = e.data.config;
-            ic.log('Event[config.change]:' + JSON.stringify(e));
+            log.info('Event[config.change]:' + JSON.stringify(e));
             _this.config(config);
         });
     }
@@ -80,13 +78,13 @@ Container.prototype.__clearModuleCache = function(moduleFilePath){
             this.__clearModuleCache(childs.id);
         }
         if(donotClear.indexOf(moduleFilePath) === -1){
-            ic.log('clear cache : ' + moduleFilePath);
+            log.info('clear cache : ' + moduleFilePath);
             delete require.cache[moduleFilePath];
         }
     }
 };
 Container.prototype._watchAllFiles = function(moduleFilePath,watcher){
-    ic.log('watching file : ' + moduleFilePath);
+    log.info('watching file : ' + moduleFilePath);
     var _this = this;
     fs.watchFile(moduleFilePath,watcher);
     var moduleCache = require.cache[moduleFilePath];
@@ -104,7 +102,7 @@ Container.prototype._watchAllFiles = function(moduleFilePath,watcher){
     }
 };
 Container.prototype._unwatchAllFiles = function(moduleFilePath,watcher){
-    ic.log('unwatching file : ' + moduleFilePath);
+    log.info('unwatching file : ' + moduleFilePath);
     var _this = this;
     fs.unwatchFile(moduleFilePath,watcher);
     var moduleCache = require.cache[moduleFilePath];
@@ -122,7 +120,7 @@ Container.prototype._unwatchAllFiles = function(moduleFilePath,watcher){
     }
 };
 Container.prototype._watchModule = function(moduleName){
-    ic.log('watching module : ' + moduleName);
+    log.info('watching module : ' + moduleName);
     var module = this.__runningModules[moduleName];
     var moduleFilePath = Path.join(modulePath,moduleName,'index.js');
     var _this = this;
@@ -134,7 +132,7 @@ Container.prototype._watchModule = function(moduleName){
     this._watchAllFiles(moduleFilePath,module.__watcher);
 };
 Container.prototype._unwatchModule = function(moduleName){
-    ic.log('unwatch module : ' + moduleName);
+    log.info('unwatch module : ' + moduleName);
     var module = this.__runningModules[moduleName];
     if(module){
         var moduleFilePath = Path.join(modulePath,moduleName,'index.js');
@@ -150,7 +148,7 @@ Container.prototype.unloadModule = function(moduleNames){
         moduleNames = [moduleNames];
     }
     moduleNames.forEach(function(moduleName){
-        ic.log('unloading ' + moduleName);
+        log.info('unloading ' + moduleName);
         var moduleFilePath = Path.join(modulePath,moduleName,'index.js');
         var module = this.__runningModules[moduleName];
         if(module){
@@ -168,7 +166,7 @@ Container.prototype.unloadModule = function(moduleNames){
             this._unwatchModule(moduleName);
         }
         this.__clearModuleCache(moduleFilePath);
-        ic.log('Unload ' + moduleName);
+        log.info('Unload ' + moduleName);
     }.bind(this));
 };
 Container.prototype.loadModule = function(moduleNames){
@@ -192,21 +190,21 @@ Container.prototype.loadModule = function(moduleNames){
         moduleNames.forEach(function(moduleName){
             var moduleFilePath = Path.join(modulePath,moduleName);
             if(lib.fs.isExist(moduleFilePath)){
-                ic.log('Load ' + moduleName + ' (' + moduleFilePath + ')');
+                log.info('Load ' + moduleName + ' (' + moduleFilePath + ')');
                 var Module;
                 try{
                     Module = require(moduleFilePath);
-                    ic.log(moduleName + ' loaded');
+                    log.info(moduleName + ' loaded');
                 }
                 catch(e){
-                    ic.error(e.stack);
+                    log.error(e.stack);
                     return;
                 }
                 var moduleMethods = ['init','unload'];
                 for(var i = 0; i < moduleMethods.length; i++){
                     var methodName = moduleMethods[i];
                     if(!Module[methodName]){
-                        ic.error('Module [' + moduleName + '] does not implement [' + methodName + ']');
+                        log.error('Module [' + moduleName + '] does not implement [' + methodName + ']');
                         return;
                     }
                 }
@@ -216,7 +214,7 @@ Container.prototype.loadModule = function(moduleNames){
                     this.__initingModule = null;
                 }
                 catch(e){
-                    ic.error(e.stack);
+                    log.error(e.stack);
                     this.unloadModule(moduleName);
                     return;
                 }
@@ -226,7 +224,7 @@ Container.prototype.loadModule = function(moduleNames){
                 }
             }
             else{
-                ic.error('Module [' + moduleName + '] is not exist in ' + modulePath);
+                log.error('Module [' + moduleName + '] is not exist in ' + modulePath);
             }
         }.bind(this));
     }
@@ -236,10 +234,10 @@ Container.prototype.config = function(config){
         return;
     }
     if(config.log === true){
-        lib.ic.InfoCenter.enable();
+        lib.log.InfoCenter.enable();
     }
     else{
-        // lib.ic.InfoCenter.disable();
+        // lib.log.InfoCenter.disable();
     }
     this._moduleAutoReload = config.moduleAutoReload;
     if(config.modules){
@@ -247,7 +245,7 @@ Container.prototype.config = function(config){
             this.loadModule(config.modules);
         }
         catch(e){
-            ic.error(e.stack);
+            log.error(e.stack);
         }
     }
 };
