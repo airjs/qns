@@ -12,10 +12,9 @@ var Path = require('path');
 var fs = require('fs');
 var program = require('commander');
 var packageConfig;
-try{
-  packageConfig = JSON.parse(Q.fs.readFile(Path.join(__dirname,'../package.json')));
-}
-catch(e){
+try {
+  packageConfig = JSON.parse(Q.fs.readFile(Path.join(__dirname, '../package.json')));
+} catch (e) {
   packageConfig = {};
 }
 
@@ -32,7 +31,7 @@ if (config) {
 var pidFile = Path.join(__dirname, '../pid');
 
 var start = function(argument) {
-  if(!fs.existsSync(pidFile)){
+  if (!fs.existsSync(pidFile)) {
     var outPath = Path.normalize('/data/logs/napi/access.log');
     var errPath = Path.normalize('/data/logs/napi/error.log');
     var out;
@@ -51,10 +50,12 @@ var start = function(argument) {
   }
 };
 var stop = function() {
-  if(fs.existsSync(pidFile)){
+  if (fs.existsSync(pidFile)) {
     var pid = Q.fs.readFile(pidFile);
     console.log('kill ' + pid);
-    process.kill(pid);
+    try {
+      process.kill(pid);
+    } catch (e) {}
     Q.fs.rm(pidFile);
   }
 };
@@ -117,6 +118,6 @@ program
 //解析commandline arguments  
 program.parse(process.argv)
 
-if(process.platform !== 'win32'){
+if (process.platform !== 'win32') {
   process.exit(0);
 }

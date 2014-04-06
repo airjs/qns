@@ -6,9 +6,11 @@
     "commander": "2.0.0",
     "async": "0.2.9",
     "express": "3.3.7",
-    "qiyilib": "*"
+    "qiyilib": "*",
+    "jade": "*",
+    "uglify-js": "*"
   },
-  "main":"./index.js",
+  "main": "./index.js",
   "bin": {
     "qns": "bin/qns.js"
   }
