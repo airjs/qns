@@ -48,7 +48,7 @@ var start = function(opts) {
       (function trySend() {
         sendCommand('start', opts, function(err) {
           if (err) {
-            console.log(err);
+            // console.log(err);
             setTimeout(trySend, 500);
           }
         });
