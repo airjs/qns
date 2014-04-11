@@ -35,6 +35,7 @@ var mkdir = function(dir) {
 };
 
 var start = function(opts) {
+  opts = opts || {};
   forever.list(false, function(err, processes) {
     if (!processes) {
       if (opts.configfile) {
