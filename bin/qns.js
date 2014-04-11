@@ -12,6 +12,7 @@ var fs = require('fs');
 var program = require('commander');
 var nssocket = require('nssocket');
 var packageConfig;
+var exec = require('child_process').exec;
 // var npm = require('npm');
 try {
   packageConfig = JSON.parse(fs.readFileSync(Path.join(__dirname, '../package.json')));
@@ -202,6 +203,15 @@ program
     stop(function() {
       start(startOpt);
     });
+  });
+
+program
+  .command('init')
+  .description('Init server')
+  .action(function(cmd) {
+    var config = Config.load();
+    config.modulePath = cmd;
+    Config.write(config);
   });
 
 program

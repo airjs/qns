@@ -9,11 +9,15 @@ var extend = require('node.extend');
 var log = new lib.ic.InfoCenter({
     moduleName: 'core'
 });
-var modulePath = process.env.QNS_PATH || Path.join(__dirname, 'modules');
 
 var Container = function(options) {
     options = options || {};
     var _this = this;
+    var config = Config.load();
+    if (!config.modulePath) {
+        throw 'Server not inited';
+    }
+    this._modulePath = config.modulePath;
     if (options.watch) {
         Config.watch();
         Config.on('change', function(e) {
@@ -28,7 +32,6 @@ var Container = function(options) {
         db: DB.init(this, options)
     };
     this.__runningModules = {};
-    var config = Config.load();
     if (config) {
         this.__config = config;
         this.config(config);
@@ -120,7 +123,7 @@ Container.prototype._unwatchAllFiles = function(moduleFilePath, watcher) {
 Container.prototype._watchModule = function(moduleName) {
     log.info('watching module : ' + moduleName);
     var module = this.__runningModules[moduleName];
-    var moduleFilePath = Path.join(modulePath, moduleName, 'index.js');
+    var moduleFilePath = Path.join(this._modulePath, moduleName, 'index.js');
     var _this = this;
     if (!module.__watcher) {
         module.__watcher = function() {
@@ -133,7 +136,7 @@ Container.prototype._unwatchModule = function(moduleName) {
     log.info('unwatch module : ' + moduleName);
     var module = this.__runningModules[moduleName];
     if (module) {
-        var moduleFilePath = Path.join(modulePath, moduleName, 'index.js');
+        var moduleFilePath = Path.join(this._modulePath, moduleName, 'index.js');
         this._unwatchAllFiles(moduleFilePath, module.__watcher);
     }
 };
@@ -147,7 +150,7 @@ Container.prototype.unloadModule = function(moduleNames) {
     }
     moduleNames.forEach(function(moduleName) {
         log.info('unloading ' + moduleName);
-        var moduleFilePath = Path.join(modulePath, moduleName, 'index.js');
+        var moduleFilePath = Path.join(this._modulePath, moduleName, 'index.js');
         var module = this.__runningModules[moduleName];
         if (module) {
             module.unload(this);
@@ -185,7 +188,7 @@ Container.prototype.loadModule = function(moduleNames) {
     }
     if (moduleNames.length > 0) {
         moduleNames.forEach(function(moduleName) {
-            var moduleFilePath = Path.join(modulePath, moduleName);
+            var moduleFilePath = Path.join(this._modulePath, moduleName);
             if (lib.fs.isExist(moduleFilePath)) {
                 log.info('Load ' + moduleName + ' (' + moduleFilePath + ')');
                 var Module;
@@ -219,7 +222,7 @@ Container.prototype.loadModule = function(moduleNames) {
                     this._watchModule(moduleName);
                 }
             } else {
-                log.error('Module [' + moduleName + '] is not exist in ' + modulePath);
+                log.error('Module [' + moduleName + '] is not exist in ' + this._modulePath);
             }
         }.bind(this));
     }
@@ -238,23 +241,25 @@ Container.prototype.config = function(config) {
         // lib.log.InfoCenter.disable();
     }
     this._moduleAutoReload = config.moduleAutoReload;
-    if (config.modules || config.add) {
-        if (!config.modules) {
-            config.modules = this.__config.modules || '';
-        }
-        if (config.add) {
-            config.modules += config.modules ? ',' + config.add : config.add;
-        }
+    if (config.modules) {
         try {
             this.loadModule(config.modules);
         } catch (e) {
             log.error(e.stack);
         }
     }
+    if (config.add) {
+        try {
+            this.loadModule(config.add);
+            delete config.add;
+        } catch (e) {
+            log.error(e.stack);
+        }
+    }
     if (config.del) {
         try {
-            this.unloadModule(config.modules || config.add);
-            this.__config.modules.replace()
+            this.unloadModule(config.del);
+            delete config.del;
         } catch (e) {
             log.error(e.stack);
         }
