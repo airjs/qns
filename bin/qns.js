@@ -223,6 +223,9 @@ program
   .command('init')
   .description('Init server')
   .action(function(cmd) {
+    if (cmd.charAt(0) !== '/') {
+      cmd = Path.join(process.cwd(), cmd);
+    }
     var config = {
       "socketPort": 56789,
       "modulePath": Path.dirname(cmd),
