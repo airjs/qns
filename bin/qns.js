@@ -238,5 +238,5 @@ program
     _config(opts);
   });
 
-//解析commandline arguments  
+//解析commandline arguments
 program.parse(process.argv)
