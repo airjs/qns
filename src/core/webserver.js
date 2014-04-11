@@ -49,7 +49,6 @@ Server.prototype.route = function(routers) {
                             };
                         }
                         router.data(req, function(data) {
-                            console.log(Path.join(module.dir, 'views'))
                             self.__app.set('views', Path.join(module.dir, 'views'));
                             self.__app.render(router.view, data, function(err, html) {
                                 if (err) {
