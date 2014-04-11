@@ -37,6 +37,10 @@ var mkdir = function(dir) {
 var start = function(opts) {
   forever.list(false, function(err, processes) {
     if (!processes) {
+      if (opts.configfile) {
+        Config.apply(opts.configfile);
+      }
+      config = Config.load();
       var outPath = Path.normalize(config.logPath || Path.join(__dirname, '../logs/access.log'));
       var options = {};
 
@@ -125,6 +129,12 @@ var options = {
     action: 'start',
     short: 'w',
     des: 'watch config file'
+  },
+  configfile: {
+    action: 'start',
+    short: 'c',
+    type: 'path',
+    des: 'config file path'
   },
   outfile: {
     action: 'start,config',

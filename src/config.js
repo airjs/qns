@@ -70,8 +70,7 @@ var evt = {};
 })(JSON);
 
 var Config = {
-    load: function(filePath) {
-        this.apply(filePath);
+    load: function() {
         return this._load();
     },
     watch: function() {
@@ -91,11 +90,9 @@ var Config = {
         }
     },
     read: function() {
-        this.apply();
         return lib.fs.readFile(currConfig);
     },
     write: function(config) {
-        this.apply();
         var str = JSON.stringify(config);
         lib.fs.writeFile(currConfig, JSON.format(str));
     },

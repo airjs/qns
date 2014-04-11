@@ -13,6 +13,9 @@ var log = new lib.ic.InfoCenter({
 var Container = function(options) {
     options = options || {};
     var _this = this;
+    if (options.configfile) {
+        Config.apply(options.configfile);
+    }
     var config = Config.load();
     if (!config.modulePath) {
         throw 'Server not inited';
@@ -175,56 +178,59 @@ Container.prototype.loadModule = function(moduleNames) {
         moduleNames = [moduleNames];
     }
     var _this = this;
-    for (var moduleName in this.__runningModules) {
-        if (this.__runningModules.hasOwnProperty(moduleName)) {
-            var index = moduleNames.indexOf(moduleName);
-            if (index !== -1) {
-                //已经启动过的模块不再重新启动
-                moduleNames.splice(index, 1);
-            } else {
-                this.unloadModule(moduleName);
-            }
-        }
-    }
+    // for (var moduleName in this.__runningModules) {
+    //     if (this.__runningModules.hasOwnProperty(moduleName)) {
+    //         var index = moduleNames.indexOf(moduleName);
+    //         if (index !== -1) {
+    //             //已经启动过的模块不再重新启动
+    //             moduleNames.splice(index, 1);
+    //         } else {
+    //             this.unloadModule(moduleName);
+    //         }
+    //     }
+    // }
     if (moduleNames.length > 0) {
         moduleNames.forEach(function(moduleName) {
             var moduleFilePath = Path.join(this._modulePath, moduleName);
             if (lib.fs.isExist(moduleFilePath)) {
                 log.info('Load ' + moduleName + ' (' + moduleFilePath + ')');
-                var Module;
-                try {
-                    Module = require(moduleFilePath);
-                    Module.dir = moduleFilePath;
-                    log.info(moduleName + ' loaded');
-                } catch (e) {
-                    log.error(e.stack || e.message || e);
-                    return;
-                }
-                var moduleMethods = ['init', 'unload'];
-                for (var i = 0; i < moduleMethods.length; i++) {
-                    var methodName = moduleMethods[i];
-                    if (!Module[methodName]) {
-                        log.error('Module [' + moduleName + '] does not implement [' + methodName + ']');
-                        return;
-                    }
-                }
-                try {
-                    this.__initingModule = Module;
-                    Module.init(this);
-                    this.__initingModule = null;
-                } catch (e) {
-                    log.error(e.stack || e.message || e);
-                    this.unloadModule(moduleName);
-                    return;
-                }
-                this.__runningModules[moduleName] = Module;
-                if (this._moduleAutoReload) {
-                    this._watchModule(moduleName);
-                }
+                this._load(moduleName, moduleFilePath);
+                log.info(moduleName + ' loaded');
             } else {
                 log.error('Module [' + moduleName + '] is not exist in ' + this._modulePath);
             }
         }.bind(this));
+    }
+};
+Container.prototype._load = function(moduleName, moduleFilePath) {
+    var Module;
+    try {
+        Module = require(moduleFilePath);
+        Module.dir = moduleFilePath;
+    } catch (e) {
+        log.error(e.stack || e.message || e);
+        return;
+    }
+    var moduleMethods = ['init', 'unload'];
+    for (var i = 0; i < moduleMethods.length; i++) {
+        var methodName = moduleMethods[i];
+        if (!Module[methodName]) {
+            log.error('Module [' + moduleName + '] does not implement [' + methodName + ']');
+            return;
+        }
+    }
+    try {
+        this.__initingModule = Module;
+        Module.init(this);
+        this.__initingModule = null;
+    } catch (e) {
+        log.error(e.stack || e.message || e);
+        this.unloadModule(moduleName);
+        return;
+    }
+    this.__runningModules[moduleName] = Module;
+    if (this._moduleAutoReload) {
+        this._watchModule(moduleName);
     }
 };
 Container.prototype.reload = function() {
@@ -270,7 +276,5 @@ Container.prototype.config = function(config) {
     this.__config = extend(true, this.__config, config);
     Config.write(this.__config);
 };
-
-
 
 module.exports = Container;
