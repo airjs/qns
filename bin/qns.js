@@ -5,7 +5,6 @@
  * when found, before invoking the "real" _mocha(1) executable.
  */
 
-var Server = require('../src/server');
 var forever = require('forever');
 var Config = require('../src/config');
 var Path = require('path');
@@ -13,10 +12,10 @@ var fs = require('fs');
 var program = require('commander');
 var nssocket = require('nssocket');
 var packageConfig;
-try{
-  packageConfig = JSON.parse(fs.readFileSync(Path.join(__dirname,'../package.json')));
-}
-catch(e){
+// var npm = require('npm');
+try {
+  packageConfig = JSON.parse(fs.readFileSync(Path.join(__dirname, '../package.json')));
+} catch (e) {
   packageConfig = {};
 }
 
@@ -24,63 +23,88 @@ var config = Config.load();
 
 var runScriptPath = Path.join(__dirname, '../src/run.js');
 
+var mkdir = function(dir) {
+  if (!fs.existsSync(dir)) {
+    var parent = Path.dirname(dir);
+    if (!fs.existsSync(parent)) {
+      mkdir(parent);
+    }
+    fs.mkdirSync(dir);
+  }
+};
+
 var start = function(opts) {
-  forever.list(false, function (err, processes) {
+  forever.list(false, function(err, processes) {
     if (!processes) {
-      var outPath = Path.normalize(config.logPath || '/data/logs/qns/access.log');
+      var outPath = Path.normalize(config.logPath || Path.join(__dirname, '../logs/access.log'));
       var options = {};
 
-      if (fs.existsSync(outPath)) {
-        options.logFile = outPath;
-      }
-      var monitor = forever.startDaemon(runScriptPath,options);
-      (function trySend(){
-        sendCommand('start',opts,function(err){
-          if(err){
+      mkdir(Path.dirname(outPath));
+
+      options.logFile = outPath;
+
+      var monitor = forever.startDaemon(runScriptPath, options);
+      (function trySend() {
+        sendCommand('start', opts, function(err) {
+          if (err) {
             console.log(err);
-            setTimeout(trySend,500);
+            setTimeout(trySend, 500);
           }
         });
       })();
     }
   });
 };
-var stop = function() {
-  forever.list(false, function (err, processes) {
+var stop = function(callback) {
+  forever.list(false, function(err, processes) {
     if (processes) {
-      forever.stop(runScriptPath);
+      var ev = forever.stop(runScriptPath);
+      if (callback) {
+        ev.on('stop', function() {
+          setTimeout(callback, 100);
+        });
+      }
+    } else {
+      if (callback) callback();
     }
   });
 };
-var status = function(){
-  forever.list(false, function (err, processes) {
+var reload = function() {
+  forever.list(false, function(err, processes) {
     if (processes) {
-      forever.log.info('Forever processes running');
-      processes.split('\n').forEach(function (line) {
-        forever.log.data(line);
-      });
+      sendCommand('reload');
     }
-    else {
+  });
+};
+var status = function() {
+  forever.list(true, function(err, processes) {
+    if (processes) {
+      forever.log.info('Qns is running');
+    } else {
       forever.log.info('Qns is down.');
     }
   });
 };
-var sendCommand = function(action,cmd,callback){
+var install = function(modules, opts) {
+  modules = modules.split(',');
+
+};
+var sendCommand = function(action, cmd, callback) {
   var socket = new nssocket.NsSocket();
-  socket.on('end',function(){
+  socket.on('end', function() {
     callback();
   });
-  socket.on('error',function(err){
+  socket.on('error', function(err) {
     callback(err);
   });
   socket.connect(config.socketPort);
-  socket.send(action,cmd);
+  socket.send(action, cmd);
   socket.end();
 };
 var _config = function(cmd) {
-  forever.list(false, function (err, processes) {
+  forever.list(false, function(err, processes) {
     if (processes) {
-      sendCommand('config',cmd);
+      sendCommand('config', cmd);
     }
   });
 };
@@ -90,20 +114,52 @@ var list = function(val) {
 }
 
 var options = {
-  port:{action:'start',short:'p',type:'number',des:'port'},
-  watch:{action:'start',short:'w',des:'watch config file'},
-  outfile:{action:'start,config',short:'o',type:'path',des:'outfile'},
-  errfile:{action:'start,config',short:'e',type:'path',des:'errfile'},
-  add:{action:'config',short:'a',type:'items',des:'add modules',fn:list},
-  del:{action:'config',short:'d',type:'items',des:'delete modules',fn:list}
+  port: {
+    action: 'start',
+    short: 'p',
+    type: 'number',
+    des: 'port'
+  },
+  watch: {
+    action: 'start',
+    short: 'w',
+    des: 'watch config file'
+  },
+  outfile: {
+    action: 'start,config',
+    short: 'o',
+    type: 'path',
+    des: 'outfile'
+  },
+  errfile: {
+    action: 'start,config',
+    short: 'e',
+    type: 'path',
+    des: 'errfile'
+  },
+  add: {
+    action: 'config',
+    short: 'a',
+    type: 'items',
+    des: 'add modules',
+    fn: list
+  },
+  del: {
+    action: 'config',
+    short: 'd',
+    type: 'items',
+    des: 'delete modules',
+    fn: list
+  }
 };
 
-var getOptions = function(cmd,action){
+var getOptions = function(cmd, action) {
   var opts = {};
-  for(var key in cmd){
-    if(options.hasOwnProperty(key)){
+  // console.log(cmd);
+  for (var key in cmd) {
+    if (options.hasOwnProperty(key)) {
       var actions = options[key].action.split(',');
-      if(actions.indexOf(action) !== -1){
+      if (actions.indexOf(action) !== -1) {
         opts[key] = cmd[key];
       }
     }
@@ -115,18 +171,21 @@ var getOptions = function(cmd,action){
 program
   .version(packageConfig.version);
 
-for(var name in options){
+for (var name in options) {
   var option = options[name];
   program.option('-' + option.short + ', --' + name + (option.type ? ' <' + option.type + '>' : ''), option.des, option.fn);
 }
+
+var startOpt = null;
 
 program
   .command('start')
   .description('Start server on port')
   .action(function(cmd) {
-    var opts = getOptions(cmd.parent,'start');
-    console.log(opts);
-    start(opts);
+    var opts = getOptions(cmd.parent, 'start');
+    startOpt = opts;
+    // console.log(opts);
+    start(startOpt);
   });
 
 program
@@ -137,6 +196,22 @@ program
   });
 
 program
+  .command('restart')
+  .description('Restart server')
+  .action(function(cmd) {
+    stop(function() {
+      start(startOpt);
+    });
+  });
+
+program
+  .command('reload')
+  .description('Reload config')
+  .action(function(cmd) {
+    reload();
+  });
+
+program
   .command('status')
   .description('Display status')
   .action(function(cmd) {
@@ -144,10 +219,22 @@ program
   });
 
 program
+  .command('install')
+  .description('install a module')
+  .action(function(modules, cmd) {
+    if (arguments.length === 1) {
+      cmd = modules;
+      modules = '';
+    }
+    var opts = getOptions(cmd.parent, 'install');
+    install(modules, opts);
+  });
+
+program
   .command('config')
   .description('Lists and set all qns user configuration')
   .action(function(cmd) {
-    var opts = getOptions(cmd.parent,'config');
+    var opts = getOptions(cmd.parent, 'config');
     _config(opts);
   });
 

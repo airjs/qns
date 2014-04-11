@@ -1,7 +1,9 @@
 var lib = require('qiyilib');
 var cluster = require('cluster');
 var numCPUs = require('os').cpus().length;
-var ic = new lib.ic.InfoCenter({moduleName:'qns'});
+var ic = new lib.ic.InfoCenter({
+    moduleName: 'qns'
+});
 var nssocket = require('nssocket');
 var Config = require('./config');
 var config = Config.load();
@@ -22,17 +24,27 @@ lib.ic.InfoCenter.enable();
 //         cluster.fork();
 //     });
 // } else {
-    
+
 // }
 
-var socketServer = nssocket.createServer(function (socket) {
-  // socket.data(['config'], function (data) {
-  //   console.log(data);
-  // });
-  socket.data('start',function(data){
-    var server = new Server(data);
-    server.start();
-  });
+var running = null;
+
+var socketServer = nssocket.createServer(function(socket) {
+    // socket.data(['config'], function (data) {
+    //   console.log(data);
+    // });
+    socket.data('start', function(data) {
+        if (!running) {
+            running = new Server(data);
+            running.start();
+        }
+    });
+    socket.data('config', function(data) {
+        running.config(data);
+    });
+    socket.data('reload', function() {
+        running.reload();
+    });
 });
 socketServer.listen(config.socketPort);
 ic.log('Starting...');

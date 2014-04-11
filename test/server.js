@@ -6,7 +6,7 @@ var lib = require('qiyilib');
 var Path = require('path');
 var childProcess = require('child_process');
 var base = '';
-var Server = require('../../src/server');
+var Server = require('../src/server');
 
 var assert = require('assert');
 
@@ -24,7 +24,7 @@ var TestModule = {
     add:function(){
         lib.fs.mkdir(this.modulePath);
         var moduleFilePath = Path.join(this.modulePath,'index.js');
-        lib.fs.writeFile(moduleFilePath,'var Test = {init:function(server){server._route({"/test.html":{callback:this._process}})},unload:function(server){},_process:function(req,res){res.render("test.jade",{name:"seon"})}};module.exports = Test;');
+        lib.fs.writeFile(moduleFilePath,'var Test = {init:function(server){server.route({"/test.html":{callback:this._process}})},unload:function(server){},_process:function(req,res){res.render("test.jade",{name:"seon"})}};module.exports = Test;');
         this.writeTemplate();
     },
     remove:function(){
@@ -32,7 +32,7 @@ var TestModule = {
     },
     write:function(content){
         var moduleFilePath = Path.join(this.modulePath,'index.js');
-        lib.fs.writeFile(moduleFilePath,'var Test = {init:function(server){server._route({"/test.html":{callback:this._process}})},unload:function(server){},_process:function(req,res){res.send("' + content + '")}};module.exports = Test;');
+        lib.fs.writeFile(moduleFilePath,'var Test = {init:function(server){server.route({"/test.html":{callback:this._process}})},unload:function(server){},_process:function(req,res){res.send("' + content + '")}};module.exports = Test;');
     },
     writeTemplate:function(content){
         content = content || '="test"';
@@ -222,6 +222,21 @@ describe('Server', function(){
                     throw e;
                 }
             });
+        });
+        it('can not inject method that is exist.', function(done){
+            var module = {
+                __injectTest:function(){return 'injected'}
+            };
+            server.injectMethod(module,['__injectTest']);
+            if(server.__injectTest() === 'injected'){
+                try{
+                    server.injectMethod(module,['__injectTest']);
+                }
+                catch(e){
+                    assert.equal('method is exist.',e);
+                    done();
+                }
+            }
         });
     });
 });

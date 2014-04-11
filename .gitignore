@@ -3,3 +3,7 @@ node_modules/
 qns_modules/
 #temp files
 pid
+logs/
+src-cov
+.DS_Store
+modules/
