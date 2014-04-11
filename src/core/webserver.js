@@ -41,23 +41,25 @@ Server.prototype.route = function(routers) {
         if (!routeMaps[path]) {
             if (!this['__' + method]) throw 'not support method';
             if (!router.callback) {
-                router.callback = function(req, res, next) {
-                    if (!router.data) {
-                        router.data = function(req, callback) {
-                            callback({});
-                        };
-                    }
-                    router.data(req, function(data) {
-                        console.log(Path.join(module.dir, 'views'))
-                        self.__app.set('views', Path.join(module.dir, 'views'));
-                        self.__app.render(router.view, data, function(err, html) {
-                            if (err) {
-                                ic.error(err);
-                            }
-                            res.send(html);
+                (function(router) {
+                    router.callback = function(req, res, next) {
+                        if (!router.data) {
+                            router.data = function(req, callback) {
+                                callback({});
+                            };
+                        }
+                        router.data(req, function(data) {
+                            console.log(Path.join(module.dir, 'views'))
+                            self.__app.set('views', Path.join(module.dir, 'views'));
+                            self.__app.render(router.view, data, function(err, html) {
+                                if (err) {
+                                    ic.error(err);
+                                }
+                                res.send(html);
+                            });
                         });
-                    });
-                };
+                    };
+                })(router)
             }
             this.__routeMaps[path] = {
                 method: method,
