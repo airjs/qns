@@ -1,7 +1,7 @@
 {
   "name": "qns",
   "description": "Qiyi Node Server",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "dependencies": {
     "commander": "2.0.0",
     "async": "0.2.9",
