@@ -41,6 +41,10 @@ var start = function(opts) {
         Config.apply(opts.configfile);
       }
       config = Config.load();
+      if (!config.modulePath) {
+        console.log('please run qns init <path> first.');
+        return;
+      }
       var outPath = Path.normalize(config.logPath || Path.join(__dirname, '../logs/access.log'));
       var options = {};
 
@@ -219,9 +223,17 @@ program
   .command('init')
   .description('Init server')
   .action(function(cmd) {
-    var config = Config.load();
-    config.modulePath = cmd;
+    var config = {
+      "socketPort": 56789,
+      "modulePath": Path.dirname(cmd),
+      "root": cmd,
+      "logPath": Path.join(cmd, "/logs/access.log"),
+      "modules": Path.basename(cmd)
+    };
+    var configFile = Path.join(cmd, 'qns.conf');
+    Config.apply(configFile);
     Config.write(config);
+    fs.writeFileSync(Path.join(__dirname, '../qns.conf'), configFile);
   });
 
 program

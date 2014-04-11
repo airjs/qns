@@ -3,7 +3,8 @@ var Path = require('path');
 var fs = require('fs');
 var uglify = require('uglify-js');
 
-var defaultConfig = Path.join(__dirname, '../conf/default.conf');
+var defaultConfig = fs.readFileSync(Path.join(__dirname, '../qns.conf')).toString();
+
 var currConfig = defaultConfig;
 
 var evt = {};
