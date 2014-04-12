@@ -1,7 +1,7 @@
 {
   "name": "qns",
   "description": "Qiyi Node Server",
-  "version": "0.2.11",
+  "version": "0.2.12",
   "dependencies": {
     "commander": "2.0.0",
     "async": "0.2.9",
@@ -19,5 +19,8 @@
   "main": "./index.js",
   "bin": {
     "qns": "bin/qns.js"
+  },
+  "scripts": {
+    "install": "if [ ! -d ~/.qns ]; then sudo -u $SUDO_USER mkdir ~/.qns; fi && sudo -u $SUDO_USER cp conf/default.conf ~/.qns/"
   }
 }

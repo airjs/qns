@@ -3,9 +3,15 @@ var Path = require('path');
 var fs = require('fs');
 var uglify = require('uglify-js');
 
-var defaultConfig = fs.readFileSync(Path.join(__dirname, '../qns.conf')).toString();
+var defaultConfig = Path.join(process.env.HOME, '.qns/default.conf');
+
+var currConfPath = Path.join(process.env.HOME, '.qns/.currconfig');
 
 var currConfig = defaultConfig;
+
+if (fs.existsSync(currConfPath)) {
+    currConfig = fs.readFileSync(currConfPath).toString();
+}
 
 var evt = {};
 
@@ -89,6 +95,9 @@ var Config = {
         } else {
             currConfig = defaultConfig;
         }
+        fs.writeFileSync(Path.join(process.env.HOME, '.qns/.currconfig'), currConfig, {
+            flag: 'w+'
+        });
     },
     read: function() {
         return lib.fs.readFile(currConfig);

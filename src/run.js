@@ -45,6 +45,12 @@ var socketServer = nssocket.createServer(function(socket) {
     socket.data('reload', function() {
         running.reload();
     });
+    socket.data('stop', function() {
+        if (running) {
+            running.stop();
+        }
+        ic.log('Stoped.');
+    });
 });
 socketServer.listen(config.socketPort);
 ic.log('Starting...');

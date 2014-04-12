@@ -20,8 +20,6 @@ try {
   packageConfig = {};
 }
 
-var config = Config.load();
-
 var runScriptPath = Path.join(__dirname, '../src/run.js');
 
 var mkdir = function(dir) {
@@ -41,12 +39,8 @@ var start = function(opts) {
       if (opts.configfile) {
         Config.apply(opts.configfile);
       }
-      config = Config.load();
-      if (!config.modulePath) {
-        console.log('please run qns init <path> first.');
-        return;
-      }
-      var outPath = Path.normalize(config.logPath || Path.join(__dirname, '../logs/access.log'));
+      var config = Config.load();
+      var outPath = Path.normalize(config.logPath ? Path.join(process.env.HOME, '.qns', config.logPath) : Path.join(__dirname, '../logs/qns.log'));
       var options = {};
 
       mkdir(Path.dirname(outPath));
@@ -101,11 +95,12 @@ var install = function(modules, opts) {
 };
 var sendCommand = function(action, cmd, callback) {
   var socket = new nssocket.NsSocket();
+  var config = Config.load();
   socket.on('end', function() {
-    callback();
+    if (callback) callback();
   });
   socket.on('error', function(err) {
-    callback(err);
+    if (callback) callback(err);
   });
   socket.connect(config.socketPort);
   socket.send(action, cmd);
@@ -208,6 +203,7 @@ program
   .command('stop')
   .description('Stop server')
   .action(function(cmd) {
+    sendCommand('stop');
     stop();
   });
 

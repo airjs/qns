@@ -132,12 +132,17 @@ Server.prototype.__unpost = function(url, fn) {
     }
 };
 
+var server;
+
 module.exports = {
     init: function(app, config) {
         config = config || {};
         config.__host = app;
-        var server = new Server(config);
-        app.injectMethod(server, ['start', 'route', '_set', '_root']);
+        server = new Server(config);
+        app._injectMethod(server, ['start', 'route', '_set', '_root']);
         return server;
+    },
+    unload: function() {
+
     }
 };

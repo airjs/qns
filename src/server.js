@@ -13,14 +13,12 @@ var log = new lib.ic.InfoCenter({
 var Container = function(options) {
     options = options || {};
     var _this = this;
+    this.__injectedMethods = [];
     if (options.configfile) {
         Config.apply(options.configfile);
     }
     var config = Config.load();
-    if (!config.modulePath) {
-        throw 'Server not inited';
-    }
-    this._modulePath = config.modulePath;
+    this._modulePath = Path.resolve(config.modulePath);
     if (options.watch) {
         Config.watch();
         Config.on('change', function(e) {
@@ -29,11 +27,15 @@ var Container = function(options) {
             _this.config(config);
         });
     }
-    this.__coreModules = {
-        server: Server.init(this, options),
-        template: Template.init(this, options),
-        db: DB.init(this, options)
-    };
+    this.__coreModules = {};
+    ['webserver'].every(function(moduleName) {
+        var Module = require('./core/' + moduleName);
+        if (!this.__checkModule(Module, moduleName)) {
+            return false;
+        }
+        Module.init(this.__delegate(['_injectMethod', '_getInitingModule']))
+        this.__coreModules[moduleName] = Module;
+    }.bind(this));
     this.__runningModules = {};
     if (config) {
         this.__config = config;
@@ -41,7 +43,123 @@ var Container = function(options) {
     }
 };
 
-Container.prototype.injectMethod = function(module, names) {
+Container.prototype.reloadModule = function(moduleNames) {
+    this.unloadModule(moduleNames);
+    this.loadModule(moduleNames);
+};
+
+Container.prototype.unloadModule = function(moduleNames) {
+    if (typeof moduleNames === 'string') {
+        moduleNames = [moduleNames];
+    }
+    moduleNames.forEach(function(moduleName) {
+        log.info('unloading ' + moduleName);
+        var moduleFilePath = Path.join(this._modulePath, moduleName, 'index.js');
+        var module = this.__runningModules[moduleName];
+        if (module) {
+            module.unload(this);
+            for (var name in this.__coreModules) {
+                //模块可能会在核心模块中注册过，因此模块被卸载时，需要通知核心模块，便于核心模块也做相应的移除处理
+                var coreModule = this.__coreModules[name];
+                if (coreModule && coreModule._unload) {
+                    coreModule._unload(module);
+                }
+            }
+            delete this.__runningModules[moduleName];
+        }
+        if (this._moduleAutoReload) {
+            this.__unwatchModule(moduleName);
+        }
+        this.__clearModuleCache(moduleFilePath);
+        log.info('Unload ' + moduleName);
+    }.bind(this));
+};
+
+Container.prototype.loadModule = function(moduleNames) {
+    if (typeof moduleNames === 'string') {
+        moduleNames = [moduleNames];
+    }
+    var _this = this;
+    // for (var moduleName in this.__runningModules) {
+    //     if (this.__runningModules.hasOwnProperty(moduleName)) {
+    //         var index = moduleNames.indexOf(moduleName);
+    //         if (index !== -1) {
+    //             //已经启动过的模块不再重新启动
+    //             moduleNames.splice(index, 1);
+    //         } else {
+    //             this.unloadModule(moduleName);
+    //         }
+    //     }
+    // }
+    if (moduleNames.length > 0) {
+        moduleNames.forEach(function(moduleName) {
+            var moduleFilePath = Path.join(this._modulePath, moduleName);
+            console.log(moduleFilePath)
+            if (lib.fs.isExist(moduleFilePath)) {
+                log.info('Load ' + moduleName + ' (' + moduleFilePath + ')');
+                this.__load(moduleName, moduleFilePath);
+            } else {
+                log.error('Module [' + moduleName + '] is not exist in ' + this._modulePath);
+            }
+        }.bind(this));
+    }
+};
+
+Container.prototype.reload = function() {
+    var config = Config.load();
+    this.config(config);
+};
+
+Container.prototype.stop = function() {
+    for (var name in this.__runningModules) {
+        this.__runningModules[name].unload();
+    }
+    for (var name in this.__coreModules) {
+        this.__coreModules[name].unload();
+    }
+    this.__destroy();
+};
+
+Container.prototype.config = function(config) {
+    if (!config) {
+        return;
+    }
+    if (config.log === true) {
+        lib.log.InfoCenter.enable();
+    } else {
+        // lib.log.InfoCenter.disable();
+    }
+    this._moduleAutoReload = config.moduleAutoReload;
+    if (config.modules) {
+        try {
+            this.loadModule(config.modules);
+        } catch (e) {
+            log.error(e.stack);
+        }
+    }
+    if (config.add) {
+        try {
+            this.loadModule(config.add);
+            delete config.add;
+        } catch (e) {
+            log.error(e.stack);
+        }
+    }
+    if (config.del) {
+        try {
+            this.unloadModule(config.del);
+            delete config.del;
+        } catch (e) {
+            log.error(e.stack);
+        }
+    }
+    if (config.root) {
+        this._root(config.root);
+    }
+    this.__config = extend(true, this.__config, config);
+};
+
+Container.prototype._injectMethod = function(module, names) {
     var _this = this;
     names.forEach(function(name) {
         if (_this.hasOwnProperty(name)) {
@@ -50,6 +168,7 @@ Container.prototype.injectMethod = function(module, names) {
         _this[name] = function() {
             return module[name].apply(module, arguments);
         };
+        _this.__injectedMethods = _this.__injectedMethods.concat(names);
     });
 };
 
@@ -89,7 +208,8 @@ Container.prototype.__clearModuleCache = function(moduleFilePath) {
         }
     }
 };
-Container.prototype._watchAllFiles = function(moduleFilePath, watcher) {
+
+Container.prototype.__watchAllFiles = function(moduleFilePath, watcher) {
     log.info('watching file : ' + moduleFilePath);
     var _this = this;
     fs.watchFile(moduleFilePath, watcher);
@@ -98,15 +218,16 @@ Container.prototype._watchAllFiles = function(moduleFilePath, watcher) {
         var childs = moduleCache.children;
         if (lib.array.isArray(childs)) {
             childs.forEach(function(child) {
-                _this._watchAllFiles(child.id, watcher);
+                _this.__watchAllFiles(child.id, watcher);
             });
         } else {
 
-            this._watchAllFiles(childs.id, watcher);
+            this.__watchAllFiles(childs.id, watcher);
         }
     }
 };
-Container.prototype._unwatchAllFiles = function(moduleFilePath, watcher) {
+
+Container.prototype.__unwatchAllFiles = function(moduleFilePath, watcher) {
     log.info('unwatching file : ' + moduleFilePath);
     var _this = this;
     fs.unwatchFile(moduleFilePath, watcher);
@@ -115,15 +236,16 @@ Container.prototype._unwatchAllFiles = function(moduleFilePath, watcher) {
         var childs = moduleCache.children;
         if (lib.array.isArray(childs)) {
             childs.forEach(function(child) {
-                _this._unwatchAllFiles(child.id, watcher);
+                _this.__unwatchAllFiles(child.id, watcher);
             });
         } else {
 
-            this._unwatchAllFiles(childs.id, watcher);
+            this.__unwatchAllFiles(childs.id, watcher);
         }
     }
 };
-Container.prototype._watchModule = function(moduleName) {
+
+Container.prototype.__watchModule = function(moduleName) {
     log.info('watching module : ' + moduleName);
     var module = this.__runningModules[moduleName];
     var moduleFilePath = Path.join(this._modulePath, moduleName, 'index.js');
@@ -133,76 +255,31 @@ Container.prototype._watchModule = function(moduleName) {
             _this.reloadModule(moduleName);
         };
     }
-    this._watchAllFiles(moduleFilePath, module.__watcher);
+    this.__watchAllFiles(moduleFilePath, module.__watcher);
 };
-Container.prototype._unwatchModule = function(moduleName) {
+
+Container.prototype.__unwatchModule = function(moduleName) {
     log.info('unwatch module : ' + moduleName);
     var module = this.__runningModules[moduleName];
     if (module) {
         var moduleFilePath = Path.join(this._modulePath, moduleName, 'index.js');
-        this._unwatchAllFiles(moduleFilePath, module.__watcher);
+        this.__unwatchAllFiles(moduleFilePath, module.__watcher);
     }
 };
-Container.prototype.reloadModule = function(moduleNames) {
-    this.unloadModule(moduleNames);
-    this.loadModule(moduleNames);
-};
-Container.prototype.unloadModule = function(moduleNames) {
-    if (typeof moduleNames === 'string') {
-        moduleNames = [moduleNames];
-    }
-    moduleNames.forEach(function(moduleName) {
-        log.info('unloading ' + moduleName);
-        var moduleFilePath = Path.join(this._modulePath, moduleName, 'index.js');
-        var module = this.__runningModules[moduleName];
-        if (module) {
-            module.unload(this);
-            for (var name in this.__coreModules) {
-                //模块可能会在核心模块中注册过，因此模块被卸载时，需要通知核心模块，便于核心模块也做相应的移除处理
-                var coreModule = this.__coreModules[name];
-                if (coreModule && coreModule._unload) {
-                    coreModule._unload(module);
-                }
-            }
-            delete this.__runningModules[moduleName];
+
+Container.prototype.__checkModule = function(Module, moduleName) {
+    var moduleMethods = ['init', 'unload'];
+    for (var i = 0; i < moduleMethods.length; i++) {
+        var methodName = moduleMethods[i];
+        if (!Module[methodName]) {
+            log.error('Module [' + moduleName + '] does not implement [' + methodName + ']');
+            return false;
         }
-        if (this._moduleAutoReload) {
-            this._unwatchModule(moduleName);
-        }
-        this.__clearModuleCache(moduleFilePath);
-        log.info('Unload ' + moduleName);
-    }.bind(this));
-};
-Container.prototype.loadModule = function(moduleNames) {
-    if (typeof moduleNames === 'string') {
-        moduleNames = [moduleNames];
     }
-    var _this = this;
-    // for (var moduleName in this.__runningModules) {
-    //     if (this.__runningModules.hasOwnProperty(moduleName)) {
-    //         var index = moduleNames.indexOf(moduleName);
-    //         if (index !== -1) {
-    //             //已经启动过的模块不再重新启动
-    //             moduleNames.splice(index, 1);
-    //         } else {
-    //             this.unloadModule(moduleName);
-    //         }
-    //     }
-    // }
-    if (moduleNames.length > 0) {
-        moduleNames.forEach(function(moduleName) {
-            var moduleFilePath = Path.join(this._modulePath, moduleName);
-            if (lib.fs.isExist(moduleFilePath)) {
-                log.info('Load ' + moduleName + ' (' + moduleFilePath + ')');
-                this._load(moduleName, moduleFilePath);
-                log.info(moduleName + ' loaded');
-            } else {
-                log.error('Module [' + moduleName + '] is not exist in ' + this._modulePath);
-            }
-        }.bind(this));
-    }
+    return true;
 };
-Container.prototype._load = function(moduleName, moduleFilePath) {
+
+Container.prototype.__load = function(moduleName, moduleFilePath) {
     var Module;
     try {
         Module = require(moduleFilePath);
@@ -211,17 +288,12 @@ Container.prototype._load = function(moduleName, moduleFilePath) {
         log.error(e.stack || e.message || e);
         return;
     }
-    var moduleMethods = ['init', 'unload'];
-    for (var i = 0; i < moduleMethods.length; i++) {
-        var methodName = moduleMethods[i];
-        if (!Module[methodName]) {
-            log.error('Module [' + moduleName + '] does not implement [' + methodName + ']');
-            return;
-        }
+    if (!this.__checkModule(Module, moduleName)) {
+        return;
     }
     try {
         this.__initingModule = Module;
-        Module.init(this);
+        Module.init(this.__delegate(['_getInitingModule'].concat(this.__injectedMethods)));
         this.__initingModule = null;
     } catch (e) {
         log.error(e.stack || e.message || e);
@@ -229,52 +301,25 @@ Container.prototype._load = function(moduleName, moduleFilePath) {
         return;
     }
     this.__runningModules[moduleName] = Module;
+    log.info(moduleName + ' loaded');
     if (this._moduleAutoReload) {
-        this._watchModule(moduleName);
+        this.__watchModule(moduleName);
     }
 };
-Container.prototype.reload = function() {
-    var config = Config.load();
-    this.config(config);
+
+Container.prototype.__destroy = function() {
+    //还原为原始配置文件
+    Config.apply();
 };
-Container.prototype.config = function(config) {
-    if (!config) {
-        return;
-    }
-    if (config.log === true) {
-        lib.log.InfoCenter.enable();
-    } else {
-        // lib.log.InfoCenter.disable();
-    }
-    this._moduleAutoReload = config.moduleAutoReload;
-    if (config.modules) {
-        try {
-            this.loadModule(config.modules);
-        } catch (e) {
-            log.error(e.stack);
-        }
-    }
-    if (config.add) {
-        try {
-            this.loadModule(config.add);
-            delete config.add;
-        } catch (e) {
-            log.error(e.stack);
-        }
-    }
-    if (config.del) {
-        try {
-            this.unloadModule(config.del);
-            delete config.del;
-        } catch (e) {
-            log.error(e.stack);
-        }
-    }
-    if (config.root) {
-        this._root(config.root);
-    }
-    this.__config = extend(true, this.__config, config);
-    Config.write(this.__config);
+
+Container.prototype.__delegate = function(methods) {
+    var delegater = {};
+    var _this = this;
+    methods.forEach(function(method) {
+        delegater[method] = _this[method].bind(_this);
+    });
+    return delegater;
 };
+
 
 module.exports = Container;
