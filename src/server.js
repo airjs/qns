@@ -120,45 +120,6 @@ Container.prototype.stop = function() {
     this.__destroy();
 };
 
-Container.prototype.config = function(config) {
-    if (!config) {
-        return;
-    }
-    if (config.log === true) {
-        lib.log.InfoCenter.enable();
-    } else {
-        // lib.log.InfoCenter.disable();
-    }
-    this._moduleAutoReload = config.moduleAutoReload;
-    if (config.modules) {
-        try {
-            this.loadModule(config.modules);
-        } catch (e) {
-            log.error(e.stack);
-        }
-    }
-    if (config.add) {
-        try {
-            this.loadModule(config.add);
-            delete config.add;
-        } catch (e) {
-            log.error(e.stack);
-        }
-    }
-    if (config.del) {
-        try {
-            this.unloadModule(config.del);
-            delete config.del;
-        } catch (e) {
-            log.error(e.stack);
-        }
-    }
-    if (config.root) {
-        this._root(config.root);
-    }
-    this.__config = extend(true, this.__config, config);
-};
-
 Container.prototype._injectMethod = function(module, names) {
     var _this = this;
     names.forEach(function(name) {

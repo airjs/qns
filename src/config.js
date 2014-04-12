@@ -2,6 +2,8 @@ var lib = require('qiyilib');
 var Path = require('path');
 var fs = require('fs');
 var uglify = require('uglify-js');
+var extend = require('node.extend');
+var cp = require('child_process');
 
 var defaultConfig = Path.join(process.env.HOME, '.qns/default.conf');
 
@@ -78,16 +80,14 @@ var evt = {};
 
 var Config = {
     load: function() {
-        return this._load();
+        this.__config = this._load();
+        return this.__config;
     },
     watch: function() {
         if (currConfig) {
             fs.unwatchFile(currConfig);
         }
         fs.watchFile(currConfig, this._onchange.bind(this));
-    },
-    reload: function() {
-        return this._load();
     },
     apply: function(filePath) {
         if (filePath) {
@@ -99,8 +99,20 @@ var Config = {
             flag: 'w+'
         });
     },
+    edit: function() {
+        cp.spawn(process.env.EDITOR || 'vi', [currConfig], {
+            stdio: 'inherit'
+        });
+    },
     read: function() {
         return lib.fs.readFile(currConfig);
+    },
+    save: function(config) {
+        if (!this.__config) {
+            this.load();
+        }
+        extend(true, this.__config, config);
+        this.write(this.__config);
     },
     write: function(config) {
         var str = JSON.stringify(config);
@@ -125,12 +137,11 @@ var Config = {
         }
     },
     _onchange: function() {
-        var _this = this;
-        var config = this.reload();
+        this.load();
         this.fire({
             type: 'change',
             data: {
-                config: config
+                config: this.__config
             }
         });
     },

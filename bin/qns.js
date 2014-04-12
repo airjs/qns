@@ -136,6 +136,12 @@ var options = {
     type: 'path',
     des: 'config file path'
   },
+  modulepath: {
+    action: 'start,config',
+    short: 'm',
+    type: 'path',
+    des: 'module file path'
+  },
   outfile: {
     action: 'start,config',
     short: 'o',
@@ -217,23 +223,10 @@ program
   });
 
 program
-  .command('init')
-  .description('Init server')
+  .command('edit')
+  .description('edit config')
   .action(function(cmd) {
-    if (cmd.charAt(0) !== '/') {
-      cmd = Path.join(process.cwd(), cmd);
-    }
-    var config = {
-      "socketPort": 56789,
-      "modulePath": Path.dirname(cmd),
-      "root": cmd,
-      "logPath": Path.join(cmd, "/logs/access.log"),
-      "modules": Path.basename(cmd)
-    };
-    var configFile = Path.join(cmd, 'qns.conf');
-    Config.apply(configFile);
-    Config.write(config);
-    fs.writeFileSync(Path.join(__dirname, '../qns.conf'), configFile);
+    Config.edit();
   });
 
 program
@@ -267,7 +260,7 @@ program
   .description('Lists and set all qns user configuration')
   .action(function(cmd) {
     var opts = getOptions(cmd.parent, 'config');
-    _config(opts);
+    Config.save(opts);
   });
 
 //解析commandline arguments
