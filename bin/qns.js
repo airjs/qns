@@ -36,8 +36,8 @@ var start = function(opts) {
   opts = opts || {};
   forever.list(false, function(err, processes) {
     if (!processes) {
-      if (opts.configfile) {
-        Config.apply(opts.configfile);
+      if (opts.configFile) {
+        Config.apply(opts.configFile);
       }
       var config = Config.load();
       var outPath = Path.normalize(config.logPath ? Path.join(process.env.HOME, '.qns', config.logPath) : Path.join(__dirname, '../logs/qns.log'));
@@ -130,13 +130,13 @@ var options = {
     short: 'w',
     des: 'watch config file'
   },
-  configfile: {
+  configFile: {
     action: 'start',
     short: 'c',
     type: 'path',
     des: 'config file path'
   },
-  modulepath: {
+  modulePath: {
     action: 'start,config',
     short: 'm',
     type: 'path',
@@ -148,25 +148,30 @@ var options = {
     type: 'path',
     des: 'outfile'
   },
-  errfile: {
-    action: 'start,config',
+  edit: {
+    action: 'config',
     short: 'e',
-    type: 'path',
-    des: 'errfile'
+    des: 'edit config file'
   },
   add: {
-    action: 'config',
+    action: 'module',
     short: 'a',
     type: 'items',
     des: 'add modules',
     fn: list
   },
   del: {
-    action: 'config',
+    action: 'module',
     short: 'd',
     type: 'items',
     des: 'delete modules',
     fn: list
+  },
+  root: {
+    action: 'config',
+    short: 'r',
+    type: 'path',
+    des: 'static root'
   }
 };
 
@@ -214,26 +219,20 @@ program
   });
 
 program
+  .command('module')
+  .description('load/unload modules')
+  .action(function(cmd) {
+    var opts = getOptions(cmd.parent, 'module');
+    sendCommand('module', opts);
+  });
+
+program
   .command('restart')
   .description('Restart server')
   .action(function(cmd) {
     stop(function() {
       start(startOpt);
     });
-  });
-
-program
-  .command('edit')
-  .description('edit config')
-  .action(function(cmd) {
-    Config.edit();
-  });
-
-program
-  .command('reload')
-  .description('Reload config')
-  .action(function(cmd) {
-    reload();
   });
 
 program
@@ -260,7 +259,11 @@ program
   .description('Lists and set all qns user configuration')
   .action(function(cmd) {
     var opts = getOptions(cmd.parent, 'config');
-    Config.save(opts);
+    if (opts.edit) {
+      Config.edit();
+    } else {
+      Config.save(opts);
+    }
   });
 
 //解析commandline arguments

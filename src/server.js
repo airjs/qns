@@ -14,8 +14,8 @@ var Container = function(options) {
     options = options || {};
     var _this = this;
     this.__injectedMethods = [];
-    if (options.configfile) {
-        Config.apply(options.configfile);
+    if (options.configFile) {
+        Config.apply(options.configFile);
     }
     var config = Config.load();
     this._modulePath = Path.resolve(config.modulePath);
@@ -28,18 +28,18 @@ var Container = function(options) {
         });
     }
     this.__coreModules = {};
-    ['webserver'].every(function(moduleName) {
+    ['webserver', 'template'].every(function(moduleName) {
         var Module = require('./core/' + moduleName);
         if (!this.__checkModule(Module, moduleName)) {
             return false;
         }
-        Module.init(this.__delegate(['_injectMethod', '_getInitingModule']))
+        Module.init(this.__delegate(['_injectMethod', '_getInitingModule'].concat(this.__injectedMethods)))
         this.__coreModules[moduleName] = Module;
+        return true;
     }.bind(this));
     this.__runningModules = {};
     if (config) {
-        this.__config = config;
-        this.config(config);
+        this.__config(config);
     }
 };
 
@@ -280,6 +280,37 @@ Container.prototype.__delegate = function(methods) {
         delegater[method] = _this[method].bind(_this);
     });
     return delegater;
+};
+
+Container.prototype.__config = function(config) {
+    if (!config) {
+        return;
+    }
+    if (config.log === true) {
+        lib.log.InfoCenter.enable();
+    } else {
+        // lib.log.InfoCenter.disable();
+    }
+    this._moduleAutoReload = config.moduleAutoReload;
+    if (config.add) {
+        try {
+            this.loadModule(config.add);
+            delete config.add;
+        } catch (e) {
+            log.error(e.stack);
+        }
+    }
+    if (config.del) {
+        try {
+            this.unloadModule(config.del);
+            delete config.del;
+        } catch (e) {
+            log.error(e.stack);
+        }
+    }
+    if (config.root) {
+        this._root(config.root);
+    }
 };
 
 

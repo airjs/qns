@@ -7,5 +7,6 @@ var ic = new lib.ic.InfoCenter({
 module.exports = {
     init: function(app, config) {
         app._set('view engine', 'jade');
-    }
+    },
+    unload: function() {}
 };

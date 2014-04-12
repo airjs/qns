@@ -39,8 +39,13 @@ var socketServer = nssocket.createServer(function(socket) {
             running.start();
         }
     });
-    socket.data('reload', function() {
-        running.reload();
+    socket.data('module', function(data) {
+        if (data.add) {
+            running.loadModule(data.add);
+        }
+        if (data.del) {
+            running.unloadModule(data.del);
+        }
     });
     socket.data('stop', function() {
         if (running) {
