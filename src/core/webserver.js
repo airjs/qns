@@ -23,6 +23,9 @@ Server.prototype.start = function() {
 Server.prototype._set = function(name, value) {
     this.__app.set(name, value);
 };
+Server.prototype._engine = function(ext, callback) {
+    this.__app.engine(ext, callback);
+};
 Server.prototype._root = function(path) {
     this.__app.use(express.static(path));
 };
@@ -139,7 +142,7 @@ module.exports = {
         config = config || {};
         config.__host = app;
         server = new Server(config);
-        app._injectMethod(server, ['start', 'route', '_set', '_root']);
+        app._injectMethod(server, ['start', 'route', '_set', '_root', '_engine']);
         return server;
     },
     unload: function() {

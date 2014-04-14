@@ -269,8 +269,7 @@ Container.prototype.__load = function(moduleName, moduleFilePath) {
 };
 
 Container.prototype.__destroy = function() {
-    //还原为原始配置文件
-    Config.apply();
+
 };
 
 Container.prototype.__delegate = function(methods) {

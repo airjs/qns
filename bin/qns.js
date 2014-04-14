@@ -130,12 +130,6 @@ var options = {
     short: 'w',
     des: 'watch config file'
   },
-  configFile: {
-    action: 'start',
-    short: 'c',
-    type: 'path',
-    des: 'config file path'
-  },
   modulePath: {
     action: 'start,config',
     short: 'm',
@@ -172,6 +166,18 @@ var options = {
     short: 'r',
     type: 'path',
     des: 'static root'
+  },
+  new: {
+    short: 'n',
+    action: 'module',
+    type: 'string',
+    des: 'create a new module in module path'
+  },
+  configFile: {
+    action: 'start',
+    short: 'c',
+    type: 'path',
+    des: 'config file path'
   }
 };
 
@@ -223,7 +229,18 @@ program
   .description('load/unload modules')
   .action(function(cmd) {
     var opts = getOptions(cmd.parent, 'module');
-    sendCommand('module', opts);
+    if (opts.new) {
+      var moduleName = opts.new;
+      var config = Config.load();
+      var modulePath = Path.join(config.root, 'modules', moduleName);
+      mkdir(modulePath);
+      fs.writeFileSync(Path.join(modulePath, 'package.json'), '{"name":"' + moduleName + '","js":"index.js","stylesheet":"index.styl","template":"index.jade"}');
+      fs.writeFileSync(Path.join(modulePath, 'index.js'), 'define(function(){});');
+      fs.writeFileSync(Path.join(modulePath, 'index.styl'), '.' + moduleName);
+      fs.writeFileSync(Path.join(modulePath, 'index.jade'), 'div(data-module="' + moduleName + '")');
+    } else {
+      sendCommand('module', opts);
+    }
   });
 
 program
