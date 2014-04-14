@@ -236,8 +236,12 @@ program
       mkdir(modulePath);
       fs.writeFileSync(Path.join(modulePath, 'package.json'), '{"name":"' + moduleName + '","js":"index.js","stylesheet":"index.styl","template":"index.jade"}');
       fs.writeFileSync(Path.join(modulePath, 'index.js'), 'define(function(){});');
-      fs.writeFileSync(Path.join(modulePath, 'index.styl'), '.' + moduleName);
-      fs.writeFileSync(Path.join(modulePath, 'index.jade'), 'div(data-module="' + moduleName + '")');
+      fs.writeFileSync(Path.join(modulePath, 'index.styl'), '.' + moduleName.replace(/[A-Z]/g, function(s, i) {
+        return (i > 0 ? '-' : '') + s.toLowerCase();
+      }));
+      fs.writeFileSync(Path.join(modulePath, 'index.jade'), 'div.' + moduleName.replace(/[A-Z]/g, function(s, i) {
+        return (i > 0 ? '-' : '') + s.toLowerCase();
+      }) + '(data-module="' + moduleName + '")');
     } else {
       sendCommand('module', opts);
     }
