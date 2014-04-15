@@ -234,14 +234,23 @@ program
       var config = Config.load();
       var modulePath = Path.join(config.root, 'modules', moduleName);
       mkdir(modulePath);
-      fs.writeFileSync(Path.join(modulePath, 'package.json'), '{"name":"' + moduleName + '","js":"index.js","stylesheet":"index.styl","template":"index.jade"}');
-      fs.writeFileSync(Path.join(modulePath, 'index.js'), 'define(function(){});');
-      fs.writeFileSync(Path.join(modulePath, 'index.styl'), '.' + moduleName.replace(/[A-Z]/g, function(s, i) {
+      var files = {};
+      files[Path.join(modulePath, 'package.json')] = '{"name":"' + moduleName + '","js":"index.js","stylesheet":"index.styl","template":"index.jade"}';
+      files[Path.join(modulePath, 'index.js')] = 'define(function(){});';
+      files[Path.join(modulePath, 'model.js')] = 'define(["js/models/base"],function(Base){var Model = Base.extend({});return Model});';
+      files[Path.join(modulePath, 'view.js')] = 'define(["js/views/base"],function(Base){var View = Base.extend({});return View});';
+      files[Path.join(modulePath, 'collection.js')] = 'define(["js/colletions/base"],function(Base){var Colletion = Base.extend({});return Colletion});';
+      files[Path.join(modulePath, 'index.styl')] = '.' + moduleName.replace(/[A-Z]/g, function(s, i) {
         return (i > 0 ? '-' : '') + s.toLowerCase();
-      }));
-      fs.writeFileSync(Path.join(modulePath, 'index.jade'), 'div.' + moduleName.replace(/[A-Z]/g, function(s, i) {
+      });
+      files[Path.join(modulePath, 'index.jade')] = 'div.' + moduleName.replace(/[A-Z]/g, function(s, i) {
         return (i > 0 ? '-' : '') + s.toLowerCase();
-      }) + '(data-module="' + moduleName + '")');
+      }) + '(data-module="' + moduleName + '")';
+      for (var filepath in files) {
+        if (files.hasOwnProperty(filepath) && !fs.existsSync(filepath)) {
+          fs.writeFileSync(filepath, files[filepath]);
+        }
+      }
     } else {
       sendCommand('module', opts);
     }
