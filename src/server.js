@@ -4,7 +4,6 @@ var fs = require('fs');
 var Config = require('./config');
 var Server = require('./core/webserver');
 var Template = require('./core/template');
-var DB = require('./core/db');
 var extend = require('node.extend');
 var log = new lib.ic.InfoCenter({
     moduleName: 'core'
@@ -294,7 +293,6 @@ Container.prototype.__config = function(config) {
     if (config.add) {
         try {
             this.loadModule(config.add);
-            delete config.add;
         } catch (e) {
             log.error(e.stack);
         }
@@ -302,7 +300,13 @@ Container.prototype.__config = function(config) {
     if (config.del) {
         try {
             this.unloadModule(config.del);
-            delete config.del;
+        } catch (e) {
+            log.error(e.stack);
+        }
+    }
+    if (config.modules) {
+        try {
+            this.loadModule(config.modules);
         } catch (e) {
             log.error(e.stack);
         }

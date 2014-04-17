@@ -201,7 +201,7 @@ program
 
 for (var name in options) {
   var option = options[name];
-  program.option('-' + option.short + ', --' + name + (option.type ? ' <' + option.type + '>' : ''), option.des, option.fn);
+  program.option('-' + option.short + ', --' + name + (option.type ? ' <' + option.type + '>' : '') + ' ' + (option.action ? '<' + option.action + '> ' : ''), option.des, option.fn);
 }
 
 var startOpt = null;
@@ -236,13 +236,13 @@ program
       mkdir(modulePath);
       var files = {};
       files[Path.join(modulePath, 'package.json')] = '{"name":"' + moduleName + '","js":"index.js","stylesheet":"index.styl","template":"index.jade"}';
-      files[Path.join(modulePath, 'index.js')] = 'define(function(){});';
-      files[Path.join(modulePath, 'model.js')] = 'define(["js/models/base"],function(Base){var Model = Base.extend({});return Model});';
-      files[Path.join(modulePath, 'view.js')] = 'define(["js/views/base"],function(Base){var View = Base.extend({});return View});';
-      files[Path.join(modulePath, 'collection.js')] = 'define(["js/colletions/base"],function(Base){var Colletion = Base.extend({});return Colletion});';
+      files[Path.join(modulePath, 'index.js')] = 'define(["./view"],function(View){var view = new View({el: $(\'[data-module="' + moduleName + '"]\')});});';
+      files[Path.join(modulePath, 'model.js')] = 'define(["js/models/base"],function(Base){var Model = Base.extend({});return Model;});';
+      files[Path.join(modulePath, 'view.js')] = 'define(["js/views/base"],function(Base){var View = Base.extend({});return View;});';
+      files[Path.join(modulePath, 'collection.js')] = 'define(["js/collections/base","./model"],function(Base,Model){var Colletion = Base.extend({model:Model});return Colletion;});';
       files[Path.join(modulePath, 'index.styl')] = '.' + moduleName.replace(/[A-Z]/g, function(s, i) {
         return (i > 0 ? '-' : '') + s.toLowerCase();
-      });
+      }) + '\n  display:block';
       files[Path.join(modulePath, 'index.jade')] = 'div.' + moduleName.replace(/[A-Z]/g, function(s, i) {
         return (i > 0 ? '-' : '') + s.toLowerCase();
       }) + '(data-module="' + moduleName + '")';

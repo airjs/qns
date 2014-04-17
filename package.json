@@ -1,7 +1,7 @@
 {
   "name": "qns",
   "description": "Qiyi Node Server",
-  "version": "0.2.20",
+  "version": "0.2.28",
   "dependencies": {
     "commander": "2.0.0",
     "async": "0.2.9",
@@ -10,7 +10,6 @@
     "qiyilib": "*",
     "consolidate": "0.10.0",
     "loglevel": "*",
-    "mongoose": "3.8.4",
     "nssocket": "0.5.1",
     "jade": "1.3.1",
     "node.extend": "1.0.10",
@@ -21,6 +20,6 @@
     "qns": "bin/qns.js"
   },
   "scripts": {
-    "postinstall": "if [ ! -d ~/.qns ]; then mkdir ~/.qns; fi && cp conf/default.conf ~/.qns/"
+    "postinstall": "if [ ! -d ~/.qns ]; then mkdir ~/.qns; fi && if [ ! -f ~/.qns/default.conf ]; then  cp conf/default.conf ~/.qns/; fi "
   }
 }
