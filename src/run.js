@@ -28,17 +28,18 @@ lib.ic.InfoCenter.enable();
 // }
 
 var running = null;
+running = new Server();
+running.start();
 
 var socketServer = nssocket.createServer(function(socket) {
     // socket.data(['config'], function (data) {
     //   console.log(data);
     // });
-    socket.data('start', function(data) {
-        if (!running) {
-            running = new Server(data);
-            running.start();
-        }
-    });
+    // socket.data('start', function(data) {
+    //     if (!running) {
+    //         console.log(data);
+    //     }
+    // });
     socket.data('module', function(data) {
         if (data.add) {
             running.loadModule(data.add);

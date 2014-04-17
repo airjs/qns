@@ -2,14 +2,17 @@ var express = require('express');
 var lib = require('qiyilib');
 var Path = require('path');
 var fs = require('fs');
-var ic = new lib.ic.InfoCenter({
-    moduleName: 'core.webserver'
-});
+var log4js = require('log4js');
+var logger = log4js.getLogger('core:webserver');
 
 var Server = function(options) {
     options = options || {};
     this.__app = express();
     this.__app.use(express.cookieParser());
+    this.__app.use(express.bodyParser());
+    this.__app.use(log4js.connectLogger(logger, {
+        level: log4js.levels.INFO
+    }));
     this.__port = options.port || 8080;
     this.__routeMaps = {};
     this.__host = options.__host;
@@ -17,7 +20,7 @@ var Server = function(options) {
 
 Server.prototype.start = function() {
     this.__app.listen(this.__port);
-    ic.log('QNS start at ' + this.__port);
+    logger.info('QNS start at ' + this.__port);
 };
 
 Server.prototype._set = function(name, value) {
@@ -40,7 +43,7 @@ Server.prototype.route = function(routers) {
     if (!module) throw 'no module is initing';
     for (var path in routers) {
         var router = routers[path];
-        var method = router.method || 'get';
+        var method = (router.method || 'get').toLowerCase();
         if (!routeMaps[path]) {
             if (!this['__' + method]) throw 'not support method';
             if (!router.callback) {
@@ -51,7 +54,12 @@ Server.prototype.route = function(routers) {
                                 callback({});
                             };
                         }
-                        router.data(req, function(data) {
+                        router.data(req, function(err, data) {
+                            if (err) {
+                                logger.error(err);
+                                res.send(err);
+                                return;
+                            }
                             self.__app.set('views', Path.join(module.dir, 'views'));
                             self.__app.render(router.view, data, function(err, html) {
                                 if (err) {
@@ -91,7 +99,7 @@ Server.prototype.__findRouters = function(module) {
     return routers;
 };
 Server.prototype.__get = function(url, fn) {
-    ic.log('get : ' + url);
+    logger.info('get : ' + url);
     this.__app.get(url, fn);
 };
 Server.prototype.__unget = function(url, fn) {
@@ -104,7 +112,7 @@ Server.prototype.__unget = function(url, fn) {
                 var callbacks = item.callbacks;
                 for (var j = 0; j < callbacks.length; j++) {
                     if (callbacks[j] === fn) {
-                        ic.log('unget : ' + url);
+                        logger.info('unget : ' + url);
                         routes.splice(i, 1);
                         return;
                     }

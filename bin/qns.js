@@ -119,25 +119,20 @@ var list = function(val) {
 }
 
 var options = {
-  port: {
-    action: 'start',
-    short: 'p',
-    type: 'number',
-    des: 'port'
-  },
-  watch: {
-    action: 'start',
-    short: 'w',
-    des: 'watch config file'
-  },
+  // port: {
+  //   action: 'start',
+  //   short: 'p',
+  //   type: 'number',
+  //   des: 'port'
+  // },
   modulePath: {
-    action: 'start,config',
+    action: 'config',
     short: 'm',
     type: 'path',
     des: 'module file path'
   },
   outfile: {
-    action: 'start,config',
+    action: 'config',
     short: 'o',
     type: 'path',
     des: 'outfile'
@@ -172,13 +167,13 @@ var options = {
     action: 'module',
     type: 'string',
     des: 'create a new module in module path'
-  },
-  configFile: {
-    action: 'start',
-    short: 'c',
-    type: 'path',
-    des: 'config file path'
   }
+  // configFile: {
+  //   action: 'start',
+  //   short: 'c',
+  //   type: 'path',
+  //   des: 'config file path'
+  // }
 };
 
 var getOptions = function(cmd, action) {
@@ -201,7 +196,7 @@ program
 
 for (var name in options) {
   var option = options[name];
-  program.option('-' + option.short + ', --' + name + (option.type ? ' <' + option.type + '>' : '') + ' ' + (option.action ? '<' + option.action + '> ' : ''), option.des, option.fn);
+  program.option('-' + option.short + ', --' + name + (option.type ? ' <' + option.type + '>' : ''), option.des + ' ' + (option.action ? '<' + option.action + '> ' : ''), option.fn);
 }
 
 var startOpt = null;
