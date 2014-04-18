@@ -11,7 +11,12 @@ var Server = function(options) {
     this.__app.use(express.cookieParser());
     this.__app.use(express.bodyParser());
     this.__app.use(log4js.connectLogger(logger, {
-        level: log4js.levels.INFO
+        level: 'auto',
+        format: ':remote-addr - -' +
+            ' ":method :url HTTP/:http-version"' +
+            ' :status :content-length ":referrer"' +
+            ' ":user-agent"' +
+            ' :response-time'
     }));
     this.__port = options.port || 8080;
     this.__routeMaps = {};
@@ -46,26 +51,35 @@ Server.prototype.route = function(routers) {
         var method = (router.method || 'get').toLowerCase();
         if (!routeMaps[path]) {
             if (!this['__' + method]) throw 'not support method';
+            //没传callback的按照view渲染处理
             if (!router.callback) {
                 (function(router) {
                     router.callback = function(req, res, next) {
+                        var start = Date.now();
                         if (!router.data) {
                             router.data = function(req, callback) {
-                                callback({});
+                                callback(null, {});
                             };
                         }
                         router.data(req, function(err, data) {
                             if (err) {
+                                err.id = Date.now();
                                 logger.error(err);
-                                res.send(err);
+                                res.send(err.id);
                                 return;
                             }
+                            logger.debug('Got data in : ' + (Date.now() - start));
                             self.__app.set('views', Path.join(module.dir, 'views'));
+                            start = Date.now();
                             self.__app.render(router.view, data, function(err, html) {
                                 if (err) {
-                                    ic.error(err);
+                                    err.id = Date.now();
+                                    logger.error(err);
+                                    res.send(err.id);
+                                } else {
+                                    logger.debug('View rendered in : ' + (Date.now() - start));
+                                    res.send(html);
                                 }
-                                res.send(html);
                             });
                         });
                     };
@@ -99,7 +113,7 @@ Server.prototype.__findRouters = function(module) {
     return routers;
 };
 Server.prototype.__get = function(url, fn) {
-    logger.info('get : ' + url);
+    logger.debug('get : ' + url);
     this.__app.get(url, fn);
 };
 Server.prototype.__unget = function(url, fn) {
@@ -112,7 +126,7 @@ Server.prototype.__unget = function(url, fn) {
                 var callbacks = item.callbacks;
                 for (var j = 0; j < callbacks.length; j++) {
                     if (callbacks[j] === fn) {
-                        logger.info('unget : ' + url);
+                        logger.debug('unget : ' + url);
                         routes.splice(i, 1);
                         return;
                     }

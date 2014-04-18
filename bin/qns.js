@@ -13,6 +13,8 @@ var program = require('commander');
 var nssocket = require('nssocket');
 var packageConfig;
 var exec = require('child_process').exec;
+var spawn = require('child_process').spawn;
+var logger = require('log4js').getLogger('core:webserver');
 // var npm = require('npm');
 try {
   packageConfig = JSON.parse(fs.readFileSync(Path.join(__dirname, '../package.json')));
@@ -31,6 +33,19 @@ var mkdir = function(dir) {
     fs.mkdirSync(dir);
   }
 };
+
+var qnsPath = Path.join(process.env.HOME, '.qns');
+
+if (!fs.existsSync(qnsPath)) {
+  mkdir(qnsPath);
+  var child = spawn('cp', [Path.join(__dirname, '../conf/default.conf'), qnsPath]);
+  child.on('exit', function() {
+    program.parse(process.argv);
+  });
+  child.on('error', function(e) {
+    logger.error(e);
+  });
+}
 
 var start = function(opts) {
   opts = opts || {};
@@ -290,6 +305,3 @@ program
       Config.save(opts);
     }
   });
-
-//解析commandline arguments
-program.parse(process.argv)

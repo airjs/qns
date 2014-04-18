@@ -5,9 +5,7 @@ var Config = require('./config');
 var Server = require('./core/webserver');
 var Template = require('./core/template');
 var extend = require('node.extend');
-var log = new lib.ic.InfoCenter({
-    moduleName: 'core'
-});
+var logger = require('log4js').getLogger('core:webserver');
 
 var Container = function(options) {
     options = options || {};
@@ -22,7 +20,7 @@ var Container = function(options) {
         Config.watch();
         Config.on('change', function(e) {
             var config = e.data.config;
-            log.info('Event[config.change]:' + JSON.stringify(e));
+            logger.debug('Event[config.change]:' + JSON.stringify(e));
             _this.config(config);
         });
     }
@@ -52,7 +50,7 @@ Container.prototype.unloadModule = function(moduleNames) {
         moduleNames = [moduleNames];
     }
     moduleNames.forEach(function(moduleName) {
-        log.info('unloading ' + moduleName);
+        logger.debug('unloading ' + moduleName);
         var moduleFilePath = Path.join(this._modulePath, moduleName, 'index.js');
         var module = this.__runningModules[moduleName];
         if (module) {
@@ -70,7 +68,7 @@ Container.prototype.unloadModule = function(moduleNames) {
             this.__unwatchModule(moduleName);
         }
         this.__clearModuleCache(moduleFilePath);
-        log.info('Unload ' + moduleName);
+        logger.debug('Unload ' + moduleName);
     }.bind(this));
 };
 
@@ -93,12 +91,11 @@ Container.prototype.loadModule = function(moduleNames) {
     if (moduleNames.length > 0) {
         moduleNames.forEach(function(moduleName) {
             var moduleFilePath = Path.join(this._modulePath, moduleName);
-            console.log(moduleFilePath)
             if (lib.fs.isExist(moduleFilePath)) {
-                log.info('Load ' + moduleName + ' (' + moduleFilePath + ')');
+                logger.debug('Load ' + moduleName + ' (' + moduleFilePath + ')');
                 this.__load(moduleName, moduleFilePath);
             } else {
-                log.error('Module [' + moduleName + '] is not exist in ' + this._modulePath);
+                logger.error('Module [' + moduleName + '] is not exist in ' + this._modulePath);
             }
         }.bind(this));
     }
@@ -163,14 +160,14 @@ Container.prototype.__clearModuleCache = function(moduleFilePath) {
             this.__clearModuleCache(childs.id);
         }
         if (donotClear.indexOf(moduleFilePath) === -1) {
-            log.info('clear cache : ' + moduleFilePath);
+            logger.debug('clear cache : ' + moduleFilePath);
             delete require.cache[moduleFilePath];
         }
     }
 };
 
 Container.prototype.__watchAllFiles = function(moduleFilePath, watcher) {
-    log.info('watching file : ' + moduleFilePath);
+    logger.debug('watching file : ' + moduleFilePath);
     var _this = this;
     fs.watchFile(moduleFilePath, watcher);
     var moduleCache = require.cache[moduleFilePath];
@@ -188,7 +185,7 @@ Container.prototype.__watchAllFiles = function(moduleFilePath, watcher) {
 };
 
 Container.prototype.__unwatchAllFiles = function(moduleFilePath, watcher) {
-    log.info('unwatching file : ' + moduleFilePath);
+    logger.debug('unwatching file : ' + moduleFilePath);
     var _this = this;
     fs.unwatchFile(moduleFilePath, watcher);
     var moduleCache = require.cache[moduleFilePath];
@@ -206,7 +203,7 @@ Container.prototype.__unwatchAllFiles = function(moduleFilePath, watcher) {
 };
 
 Container.prototype.__watchModule = function(moduleName) {
-    log.info('watching module : ' + moduleName);
+    logger.debug('watching module : ' + moduleName);
     var module = this.__runningModules[moduleName];
     var moduleFilePath = Path.join(this._modulePath, moduleName, 'index.js');
     var _this = this;
@@ -219,7 +216,7 @@ Container.prototype.__watchModule = function(moduleName) {
 };
 
 Container.prototype.__unwatchModule = function(moduleName) {
-    log.info('unwatch module : ' + moduleName);
+    logger.debug('unwatch module : ' + moduleName);
     var module = this.__runningModules[moduleName];
     if (module) {
         var moduleFilePath = Path.join(this._modulePath, moduleName, 'index.js');
@@ -232,7 +229,7 @@ Container.prototype.__checkModule = function(Module, moduleName) {
     for (var i = 0; i < moduleMethods.length; i++) {
         var methodName = moduleMethods[i];
         if (!Module[methodName]) {
-            log.error('Module [' + moduleName + '] does not implement [' + methodName + ']');
+            logger.error('Module [' + moduleName + '] does not implement [' + methodName + ']');
             return false;
         }
     }
@@ -245,7 +242,7 @@ Container.prototype.__load = function(moduleName, moduleFilePath) {
         Module = require(moduleFilePath);
         Module.dir = moduleFilePath;
     } catch (e) {
-        log.error(e.stack || e.message || e);
+        logger.error(e.stack || e.message || e);
         return;
     }
     if (!this.__checkModule(Module, moduleName)) {
@@ -256,12 +253,12 @@ Container.prototype.__load = function(moduleName, moduleFilePath) {
         Module.init(this.__delegate(['_getInitingModule'].concat(this.__injectedMethods)));
         this.__initingModule = null;
     } catch (e) {
-        log.error(e.stack || e.message || e);
+        logger.error(e.stack || e.message || e);
         this.unloadModule(moduleName);
         return;
     }
     this.__runningModules[moduleName] = Module;
-    log.info(moduleName + ' loaded');
+    logger.debug(moduleName + ' loaded');
     if (this._moduleAutoReload) {
         this.__watchModule(moduleName);
     }
@@ -285,7 +282,7 @@ Container.prototype.__config = function(config) {
         return;
     }
     if (config.log === true) {
-        lib.log.InfoCenter.enable();
+        // lib.log.InfoCenter.enable();
     } else {
         // lib.log.InfoCenter.disable();
     }
@@ -294,21 +291,21 @@ Container.prototype.__config = function(config) {
         try {
             this.loadModule(config.add);
         } catch (e) {
-            log.error(e.stack);
+            logger.error(e.stack);
         }
     }
     if (config.del) {
         try {
             this.unloadModule(config.del);
         } catch (e) {
-            log.error(e.stack);
+            logger.error(e.stack);
         }
     }
     if (config.modules) {
         try {
             this.loadModule(config.modules);
         } catch (e) {
-            log.error(e.stack);
+            logger.error(e.stack);
         }
     }
     if (config.root) {

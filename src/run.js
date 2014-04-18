@@ -1,14 +1,11 @@
 var lib = require('qiyilib');
 var cluster = require('cluster');
 var numCPUs = require('os').cpus().length;
-var ic = new lib.ic.InfoCenter({
-    moduleName: 'qns'
-});
 var nssocket = require('nssocket');
 var Config = require('./config');
 var config = Config.load();
 var Server = require('./server');
-lib.ic.InfoCenter.enable();
+var logger = require('log4js').getLogger('core:webserver');
 
 // if (cluster.isMaster) {
 //     var num = numCPUs;
@@ -52,8 +49,8 @@ var socketServer = nssocket.createServer(function(socket) {
         if (running) {
             running.stop();
         }
-        ic.log('Stoped.');
+        logger.info('Stoped.');
     });
 });
 socketServer.listen(config.socketPort);
-ic.log('Starting...');
+logger.info('Starting...');
