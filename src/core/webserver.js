@@ -4,12 +4,14 @@ var Path = require('path');
 var fs = require('fs');
 var log4js = require('log4js');
 var logger = log4js.getLogger('core:webserver');
+// var gzippo = require('gzippo');
 
 var Server = function(options) {
     options = options || {};
     this.__app = express();
     this.__app.use(express.cookieParser());
     this.__app.use(express.bodyParser());
+    this.__app.use(express.compress());
     this.__app.use(log4js.connectLogger(logger, {
         level: 'auto',
         format: ':remote-addr - -' +
@@ -49,7 +51,7 @@ Server.prototype.route = function(routers) {
     for (var path in routers) {
         var router = routers[path];
         var method = (router.method || 'get').toLowerCase();
-        if (!routeMaps[path]) {
+        if (!routeMaps[path] || routeMaps[path].method != method) {
             if (!this['__' + method]) throw 'not support method';
             //没传callback的按照view渲染处理
             if (!router.callback) {
@@ -57,11 +59,11 @@ Server.prototype.route = function(routers) {
                     router.callback = function(req, res, next) {
                         var start = Date.now();
                         if (!router.data) {
-                            router.data = function(req, callback) {
+                            router.data = function(req, res, callback) {
                                 callback(null, {});
                             };
                         }
-                        router.data(req, function(err, data) {
+                        router.data(req, res, function(err, data, headers) {
                             if (err) {
                                 err.id = Date.now();
                                 logger.error(err);
@@ -78,7 +80,11 @@ Server.prototype.route = function(routers) {
                                     res.send(err.id);
                                 } else {
                                     logger.debug('View rendered in : ' + (Date.now() - start));
-                                    res.send(html);
+                                    headers = headers || {};
+                                    headers['content-length'] = Buffer.byteLength(html);
+                                    res.writeHead(200, headers || {});
+                                    res.write(html);
+                                    res.end();
                                 }
                             });
                         });

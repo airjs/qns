@@ -36,17 +36,6 @@ var mkdir = function(dir) {
 
 var qnsPath = Path.join(process.env.HOME, '.qns');
 
-if (!fs.existsSync(qnsPath)) {
-  mkdir(qnsPath);
-  var child = spawn('cp', [Path.join(__dirname, '../conf/default.conf'), qnsPath]);
-  child.on('exit', function() {
-    program.parse(process.argv);
-  });
-  child.on('error', function(e) {
-    logger.error(e);
-  });
-}
-
 var start = function(opts) {
   opts = opts || {};
   forever.list(false, function(err, processes) {
@@ -242,14 +231,14 @@ program
     if (opts.new) {
       var moduleName = opts.new;
       var config = Config.load();
-      var modulePath = Path.join(config.root, 'modules', moduleName);
+      var modulePath = Path.join(config.root, '../static/modules', moduleName);
       mkdir(modulePath);
       var files = {};
       files[Path.join(modulePath, 'package.json')] = '{"name":"' + moduleName + '","js":"index.js","stylesheet":"index.styl","template":"index.jade"}';
       files[Path.join(modulePath, 'index.js')] = 'define(["./view"],function(View){var view = new View({el: $(\'[data-module="' + moduleName + '"]\')});});';
       files[Path.join(modulePath, 'model.js')] = 'define(["js/models/base"],function(Base){var Model = Base.extend({});return Model;});';
-      files[Path.join(modulePath, 'view.js')] = 'define(["js/views/base"],function(Base){var View = Base.extend({});return View;});';
-      files[Path.join(modulePath, 'collection.js')] = 'define(["js/collections/base","./model"],function(Base,Model){var Colletion = Base.extend({model:Model});return Colletion;});';
+      files[Path.join(modulePath, 'view.js')] = 'define(["js/views/base"],function(Base){var View = Base.extend({moduleName:"' + moduleName + '"});return View;});';
+      files[Path.join(modulePath, 'collection.js')] = 'define(["js/collections/base","./model"],function(Base,Model){var Colletion = Base.extend({model:Model,moduleName:"' + moduleName + '"});return Colletion;});';
       files[Path.join(modulePath, 'index.styl')] = '.' + moduleName.replace(/[A-Z]/g, function(s, i) {
         return (i > 0 ? '-' : '') + s.toLowerCase();
       }) + '\n  display:block';
@@ -305,3 +294,16 @@ program
       Config.save(opts);
     }
   });
+
+if (!fs.existsSync(qnsPath)) {
+  mkdir(qnsPath);
+  var child = spawn('cp', [Path.join(__dirname, '../conf/default.conf'), qnsPath]);
+  child.on('exit', function() {
+    program.parse(process.argv);
+  });
+  child.on('error', function(e) {
+    logger.error(e);
+  });
+} else {
+  program.parse(process.argv);
+}
