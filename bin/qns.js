@@ -235,7 +235,7 @@ program
       mkdir(modulePath);
       var files = {};
       files[Path.join(modulePath, 'package.json')] = '{"name":"' + moduleName + '","js":"index.js","stylesheet":"index.styl","template":"index.jade"}';
-      files[Path.join(modulePath, 'index.js')] = 'define(["./view"],function(View){var view = new View({el: $(\'[data-module="' + moduleName + '"]\')});});';
+      files[Path.join(modulePath, 'index.js')] = 'define(["./view"],function(View){return {init:function(){var view = new View({el: $(\'[data-module="' + moduleName + '"]\')});}};});';
       files[Path.join(modulePath, 'model.js')] = 'define(["js/models/base"],function(Base){var Model = Base.extend({});return Model;});';
       files[Path.join(modulePath, 'view.js')] = 'define(["js/views/base"],function(Base){var View = Base.extend({moduleName:"' + moduleName + '"});return View;});';
       files[Path.join(modulePath, 'collection.js')] = 'define(["js/collections/base","./model"],function(Base,Model){var Colletion = Base.extend({model:Model,moduleName:"' + moduleName + '"});return Colletion;});';
