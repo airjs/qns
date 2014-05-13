@@ -148,7 +148,8 @@ var Config = {
     _load: function() {
         var fileContent, config;
         var defaultConfig = {
-            socketPort: 56789
+            socketPort: 56789,
+            port: 8080
         };
         try {
             fileContent = lib.fs.readFile(currConfig);
@@ -158,6 +159,7 @@ var Config = {
         try {
             config = lib.object.extend(defaultConfig, JSON.parse(fileContent));
         } catch (e) {
+            console.log(e)
             return defaultConfig;
         }
         return config;
