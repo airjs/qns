@@ -52,7 +52,7 @@ var Vhost = function(options) {
   }));
 
   //routing
-  app.use(routing(app));
+  app.use(routing(app,{defer:true}));
   app.unroute = function(route) {
     route.path = '';
     route.handlers = {};
@@ -312,7 +312,8 @@ function createModule(name) {
     logger.error('No root specific');
     return;
   }
-  var modulePath = path.join(config.root, '../static/modules', name);
+  var modulePath = path.join(config.root, '../client/modules', name);
+  logger.debug('Creating : ' + modulePath);
   var mkdir = function(dir) {
     if (!fs.existsSync(dir)) {
       var parent = path.dirname(dir);
