@@ -52,7 +52,9 @@ var Vhost = function(options) {
   }));
 
   //routing
-  app.use(routing(app,{defer:true}));
+  app.use(routing(app, {
+    defer: true
+  }));
   app.unroute = function(route) {
     route.path = '';
     route.handlers = {};
