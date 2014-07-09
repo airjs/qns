@@ -171,9 +171,7 @@ function registerToDaemon() {
 
   socket.data('module', function(data) {
     logger.debug(data);
-    if (data.new) {
-      createModule(data.new);
-    } else if (data.loadmodule) {
+    if (data.loadmodule) {
       loadModule(data.loadmodule);
     } else if (data.reloadmodule) {
       reloadModule(data.reloadmodule);
@@ -205,7 +203,7 @@ function loadModule(names) {
   if (names.length > 0) {
     names.forEach(function(name) {
       var moduleFilePath = path.join(self.modulePath, name);
-      if (lib.fs.isExist(moduleFilePath)) {
+      if (fs.existsSync(moduleFilePath)) {
         logger.debug('Load ' + name + ' (' + moduleFilePath + ')');
         self.loadSingleModule(name, moduleFilePath);
       } else {
@@ -306,41 +304,5 @@ function reload(moduleName) {
     clearModuleCache(this.path);
     var vhost = require(this.path);
     vhost.init(this);
-  }
-}
-
-function createModule(name) {
-  if (!config.root) {
-    logger.error('No root specific');
-    return;
-  }
-  var modulePath = path.join(config.root, '../client/modules', name);
-  logger.debug('Creating : ' + modulePath);
-  var mkdir = function(dir) {
-    if (!fs.existsSync(dir)) {
-      var parent = path.dirname(dir);
-      if (!fs.existsSync(parent)) {
-        mkdir(parent);
-      }
-      fs.mkdirSync(dir);
-    }
-  };
-  mkdir(modulePath);
-  var files = {};
-  files[path.join(modulePath, 'package.json')] = '{"name":"' + name + '","js":"index.js","stylesheet":"index.styl","template":"index.jade"}';
-  files[path.join(modulePath, 'index.js')] = 'define(["./view"],function(View){return {init:function(){var view = new View({el: $(\'[data-module="' + name + '"]\')});}};});';
-  files[path.join(modulePath, 'model.js')] = 'define(["js/models/base"],function(Base){var Model = Base.extend({});return Model;});';
-  files[path.join(modulePath, 'view.js')] = 'define(["js/views/base"],function(Base){var View = Base.extend({moduleName:"' + name + '"});return View;});';
-  files[path.join(modulePath, 'collection.js')] = 'define(["js/collections/base","./model"],function(Base,Model){var Colletion = Base.extend({model:Model,moduleName:"' + name + '"});return Colletion;});';
-  files[path.join(modulePath, 'index.styl')] = '.' + name.replace(/[A-Z]/g, function(s, i) {
-    return (i > 0 ? '-' : '') + s.toLowerCase();
-  }) + '\n  display:block';
-  files[path.join(modulePath, 'index.jade')] = 'div.' + name.replace(/[A-Z]/g, function(s, i) {
-    return (i > 0 ? '-' : '') + s.toLowerCase();
-  }) + '(data-module="' + name + '")';
-  for (var filepath in files) {
-    if (files.hasOwnProperty(filepath) && !fs.existsSync(filepath)) {
-      fs.writeFileSync(filepath, files[filepath]);
-    }
   }
 }

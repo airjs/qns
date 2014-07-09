@@ -1,7 +1,7 @@
 {
   "name": "qns",
-  "description": "Qiyi Node Server",
-  "version": "0.5.3",
+  "description": "QNS",
+  "version": "0.5.8",
   "dependencies": {
     "commander": "2.0.0",
     "async": "0.2.9",
@@ -20,8 +20,7 @@
     "koa-static": "1.4.5",
     "koa-sess": "0.3.1",
     "koa-redis": "0.1.0",
-    "koa-body": "0.0.4",
-    "qiyilib": "*"
+    "koa-body": "0.0.4"
   },
   "main": "./index.js",
   "bin": {

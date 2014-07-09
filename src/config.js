@@ -1,4 +1,3 @@
-var lib = require('qiyilib');
 var Path = require('path');
 var fs = require('fs');
 var uglify = require('uglify-js');
@@ -105,7 +104,7 @@ var Config = {
         });
     },
     read: function() {
-        return lib.fs.readFile(currConfig);
+        return fs.readFileSync(currConfig);
     },
     save: function(config) {
         if (!this.__config) {
@@ -116,7 +115,7 @@ var Config = {
     },
     write: function(config) {
         var str = JSON.stringify(config);
-        lib.fs.writeFile(currConfig, JSON.format(str));
+        fs.writeFileSync(currConfig, JSON.format(str));
     },
     on: function(type, listener) {
         var listeners = evt[type];
@@ -152,12 +151,12 @@ var Config = {
             port: 8080
         };
         try {
-            fileContent = lib.fs.readFile(currConfig);
+            fileContent = fs.readFileSync(currConfig);
         } catch (e) {
             return defaultConfig;
         }
         try {
-            config = lib.object.extend(defaultConfig, JSON.parse(fileContent));
+            config = extend(defaultConfig, JSON.parse(fileContent));
         } catch (e) {
             console.log(e)
             return defaultConfig;
