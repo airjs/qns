@@ -1,11 +1,10 @@
-#!/usr/bin/env node --harmony
+#!/usr/bin/env node
 
 /**
  * This tiny wrapper file checks for known node flags and appends them
  * when found, before invoking the "real" _mocha(1) executable.
  */
 
-var Config = require('../src/config');
 var path = require('path');
 var fs = require('fs');
 var program = require('commander');
@@ -161,10 +160,6 @@ var reload = function(callback) {
     logger.debug('Check daemon for restart.');
     if (exist) {
       exec('pm2 restart app', function(err, stdout, stderr) {
-        err = err || stderr;
-        if (err) {
-          logger.error(err)
-        }
         logger.debug(stdout);
         if (callback) {
           callback(err);
@@ -184,24 +179,13 @@ var restart = function(callback) {
     logger.debug('Check daemon for restart.');
     if (exist) {
       exec('pm2 restart daemon', function(err, stdout, stderr) {
-        err = err || stderr;
-        if (err) {
-          logger.error(err);
+        logger.debug(stdout);
+        exec('pm2 restart app', function(err, stdout, stderr) {
+          logger.debug(stdout);
           if (callback) {
             callback(err);
           }
-        } else {
-          exec('pm2 restart app', function(err, stdout, stderr) {
-            err = err || stderr;
-            if (err) {
-              logger.error(err)
-            }
-            logger.debug(stdout);
-            if (callback) {
-              callback(err);
-            }
-          });
-        }
+        });
       });
     } else {
       logger.debug('No qns is running.');
@@ -252,12 +236,6 @@ var options = {
     short: 'd',
     des: 'daemon'
   },
-  modulePath: {
-    action: 'config',
-    short: 'm',
-    type: 'path',
-    des: 'module file path'
-  },
   edit: {
     action: 'config',
     short: 'e',
@@ -268,12 +246,6 @@ var options = {
     short: 'r',
     type: 'string',
     des: 'reload modules'
-  },
-  new: {
-    short: 'n',
-    action: 'module',
-    type: 'string',
-    des: 'create a new module in module path'
   }
 };
 
