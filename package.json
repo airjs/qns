@@ -1,12 +1,11 @@
 {
   "name": "qns",
   "description": "QNS",
-  "version": "0.5.9",
+  "version": "0.5.10",
   "dependencies": {
     "commander": "2.0.0",
     "async": "0.2.9",
     "koa": "0.6.0",
-    "pm2": "0.8.2",
     "koa-routing": "1.2.7",
     "consolidate": "0.10.0",
     "log4js": "0.6.13",
