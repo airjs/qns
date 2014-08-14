@@ -31,7 +31,7 @@ var Vhost = function(options) {
 
   //加载中间件,中间件需保证顺序不要变动
   //记录access log
-  app.use(logs());
+  // app.use(logs());
 
   //模板
   app.use(views(this.viewPath, {
@@ -103,15 +103,19 @@ function start(options) {
   this._vhosts = {};
   if (config.vhosts) {
     for (var name in config.vhosts) {
-      var vhostConfig = config.vhosts[name];
-      var host = new Vhost(vhostConfig);
-      var vapp = host.app;
-      vhosts.push({
-        host: vhostConfig.host,
-        app: vapp
-      });
-      logger.info('Vhost [' + name + '] is running');
-      this._vhosts[name] = host;
+      try {
+        var vhostConfig = config.vhosts[name];
+        var host = new Vhost(vhostConfig);
+        var vapp = host.app;
+        vhosts.push({
+          host: vhostConfig.host,
+          app: vapp
+        });
+        logger.info('Vhost [' + name + '] is running');
+        this._vhosts[name] = host;
+      } catch (e) {
+        logger.error('Vhost [' + name + '] is error: ' + e);
+      }
     }
   }
   app.use(vhost(vhosts));
