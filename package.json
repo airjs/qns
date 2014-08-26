@@ -1,7 +1,7 @@
 {
   "name": "qns",
   "description": "QNS",
-  "version": "0.5.12",
+  "version": "0.5.13",
   "dependencies": {
     "commander": "2.0.0",
     "async": "0.2.9",

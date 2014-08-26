@@ -114,7 +114,7 @@ function start(options) {
         logger.info('Vhost [' + name + '] is running');
         this._vhosts[name] = host;
       } catch (e) {
-        logger.error('Vhost [' + name + '] is error: ' + e);
+        logger.error('Vhost [' + name + '] is error: ' + (e.stack || e.message || e));
       }
     }
   }
