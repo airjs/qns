@@ -84,7 +84,7 @@ var start = function(opts) {
       if (!exist) {
         startDaemon(function(err) {
           if (!err) {
-            var child = spawn('pm2', ['start', './src/app.js', '--name', 'app', '-i', '--node-args', '--harmony', cpus.length], {
+            var child = spawn('pm2', ['start', './src/app.js', '--name', 'app', '-i', cpus.length], {
               cwd: path.join(__dirname, '../')
             });
             child.stdout.on('data', function(data) {

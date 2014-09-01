@@ -10,8 +10,8 @@ var views = require('koa-views');
 var logs = require('koa-log4js');
 var vhost = require('koa-vhost');
 var staticServe = require('koa-static');
-var session = require('koa-sess');
-var redisStore = require('koa-redis');
+var session = require('koa-generic-session');
+var RedisStore = require('koa-redis');
 var body = require('koa-body');
 
 var app = koa();
@@ -44,8 +44,7 @@ var Vhost = function(options) {
 
   //session
   app.use(session({
-    defer: true,
-    store: redisStore(),
+    store: new RedisStore(),
     cookie: {
       signed: false
     }
