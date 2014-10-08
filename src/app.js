@@ -15,6 +15,7 @@ var RedisStore = require('koa-redis');
 var body = require('koa-body');
 
 var app = koa();
+var config = Config.load();
 
 var Vhost = function(options) {
 
@@ -43,12 +44,14 @@ var Vhost = function(options) {
   app.use(body());
 
   //session
-  app.use(session({
-    store: new RedisStore(),
-    cookie: {
-      signed: false
-    }
-  }));
+  if (options.session === true) {
+    app.use(session({
+      store: new RedisStore(),
+      cookie: {
+        signed: false
+      }
+    }));
+  }
 
   //routing
   app.use(routing(app, {
@@ -75,7 +78,6 @@ Vhost.prototype.unloadModule = unloadModule;
 Vhost.prototype.reloadModule = reloadModule;
 Vhost.prototype.reload = reload;
 
-var config = Config.load();
 
 //向daemon进程注册
 registerToDaemon();
