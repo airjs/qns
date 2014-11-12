@@ -159,7 +159,7 @@ var reload = function(callback) {
   check('daemon', function(exist) {
     logger.debug('Check daemon for restart.');
     if (exist) {
-      exec('pm2 restart app', function(err, stdout, stderr) {
+      exec('pm2 reload app', function(err, stdout, stderr) {
         logger.debug(stdout);
         if (callback) {
           callback(err);
